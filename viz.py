@@ -29,13 +29,12 @@ masterData = pd.DataFrame()
 onlyfiles = [f for f in listdir(dataDirectory + MONTHS[defaultMonth -1] ) if isfile(join(dataDirectory + MONTHS[defaultMonth -1] , f))]
 
 for file in onlyfiles:
-
     print("Really before file = " + dataDirectory + MONTHS[defaultMonth -1] + "/" + file)
 
     df = pd.read_csv(dataDirectory + MONTHS[defaultMonth -1] + "/" + file)
 
     print("Before")
-    masterData = pd.merge(masterData, df, how='outer', left_index=True, right_index=True)
+    masterData = pd.concat([masterData, df])
     print("After")
 
 # while True:
@@ -57,11 +56,11 @@ for file in onlyfiles:
 #         print("Need to download the data for this month")
 #         quit()
 
-print("masterData = ")
-print(masterData)
+print("size")
+print(masterData.size)
 
 fig = go.Figure(go.Densitymapbox(lat=masterData.latitude, lon=masterData.longitude, z=masterData.city,
-                                 radius=10))
+                                 radius=1))
 fig.update_layout(mapbox_style="stamen-terrain", mapbox_center_lon=180)
 fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
