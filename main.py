@@ -7,7 +7,9 @@ import calendar
 import boto3
 import S3TicketLib as s3f
 import downloadVLogs as down
-​
+
+logDirectory = "VisitorLogs/"
+
 #
 # Demo program that shows how to copy dashboard visit logs from S3 to 
 # a local directory named after the month requested
@@ -26,7 +28,7 @@ import downloadVLogs as down
 #           dashboard accesses probably on S3)
 #     - not all columns are used in the following code, e.g. latitude and longitude and success code
 #     - as of 20230628, the success codes are unreliable and should not be used yet
-​
+
 # Following function identifies start and end dates for weeks in the
 # month begin examined
 def weeks ( y, m ):
@@ -41,12 +43,12 @@ def weeks ( y, m ):
             weekEnd.append(format(end_day.isoformat()))
     weekDates = [ weekStart, weekEnd ]
     return weekDates
-​
+
 # Number of days in each month (February has 29 in case of a leap year)
 last_day = [ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ]
 # Months of the Year
 month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ]
-​
+
 # Get date information from the command line
 #    - the mm ( month ) number should be padded with a zero to the left
 #      if it is only 1 character long
@@ -59,7 +61,7 @@ start_date = yyyy+mm+"01"
 end_date = yyyy+mm+str(last_day[mon])
 yyyyStartStr = yyyy + "-01-01 00:00:00"
 yyyyEndStr = yyyy + "-12-31 23:59:59"
-​
+
 #  Access AWS Credentials and establish session
 #  as a client
 #
@@ -69,11 +71,11 @@ s3_client = s3f.credentials_client ( )
 #  as a resource
 #
 s3_resource = s3f.credentials_resource ( )
-​
+
 # Download a month of visitor logs
 #
 # Create a local directory if it does not exist
-localpath = "./"+month_names[mon]
+localpath = "./" + logDirectory+month_names[mon]
 if os.path.exists(localpath) == False:
     os.mkdir(localpath)
 # Download the files from S3 and put them in the local directory
@@ -86,18 +88,18 @@ if ret != 0:
 # Read in a month of visitor logs into DuckDB
 log_names = month_names[mon]+"/VISITOR_LOGS*.csv"
 visits = duckdb.query( f"SELECT * FROM read_csv_auto('{log_names}', header=True)").to_df()
-​
+
 # Gather some Month stats
 #     Number of visits to the dashboards
 month_stats = duckdb.query ( f"SELECT date,ip_address,iso3,country,city,dashboard FROM visits WHERE date BETWEEN '{yyyyStartStr}' AND '{yyyyEndStr}' " ).to_df()
 print ( "Statistics for "+month_names[mon]+" "+yyyy )
 print ( "There were "+str(len(month_stats))+" visits to the Dashboards" )
-​
+
 #     Number of distinct IP's that visited the dashboards
 ips = duckdb.query ( "SELECT DISTINCT ip_address FROM month_stats ORDER BY ip_address" ).to_df()
 print ( str(len(ips))+" unique users accessed the Dashboards")
 print ( "----------")
-​
+
 #     Number of unique locations (city, country) that visited the dashboards
 #         - the names for the United States and the United Kingdom are too long so replace with short forms
 locations = duckdb.query ( "SELECT DISTINCT iso3,country,city FROM month_stats ORDER BY country,city" ).to_df()
@@ -111,7 +113,7 @@ for index, row in locations.iterrows():
     else:
         print(row['country'])
 print ( "----------")
-​
+
 #     Number of distinct dashboards visited and the number of visits
 #          Dashboards Information
 #          - to find out what dashboards exist, read the dashboard
@@ -139,7 +141,7 @@ if valid > 1:
     print ( str(valid)+" were valid: " )
 else:
     print ( str(valid)+" was valid: " )
-​
+
 for i in validDash:
     print ( "    "+i )
 if invalid > 1:
@@ -149,11 +151,11 @@ else:
 for i in invalidDash:
     print ( "    "+i )
 print ( "----------")
-​
+
 ctdashs = duckdb.query ( "SELECT DISTINCT dashboard, count(dashboard) FROM month_stats GROUP BY dashboard" ).to_df()
 print ( ctdashs )
 print ( "----------")
-​
+
 #     Display information by week
 #         Notes
 #         - since some weeks have days in other months, this code ignores those days

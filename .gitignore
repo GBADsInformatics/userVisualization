@@ -1,3 +1,5 @@
 S3.conf
 ian_accessKeys.csv
 ian_credentials.csv
+/VisitorLogs
+/__pycache__
