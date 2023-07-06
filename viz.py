@@ -56,11 +56,22 @@ for file in onlyfiles:
 #         print("Need to download the data for this month")
 #         quit()
 
+##Need to add the quantity of each city to itself
+cityCounts = {}
+for row in masterData.itertuples():
+    if cityCounts.get(row.city) == None:
+        cityCounts[row.city] = 1
+    else:
+        cityCounts[row.city] = cityCounts[row.city] + 1
+
+masterData['counts'] = masterData['city'].map(cityCounts)
+
 print("size")
 print(masterData.size)
 
-fig = go.Figure(go.Densitymapbox(lat=masterData.latitude, lon=masterData.longitude, z=masterData.city,
-                                 radius=1))
+fig = px.scatter_geo(masterData, locations="iso_alpha", color="continent",
+                     hover_name="city", size="counts",
+                     projection="natural earth")
 fig.update_layout(mapbox_style="stamen-terrain", mapbox_center_lon=180)
 fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 

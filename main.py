@@ -17,7 +17,7 @@ logDirectory = "VisitorLogs/"
 # where YYYY is year and MM is month from 01 to 12 (must include the
 # leading zero)
 # Example
-#     python3 monthlyDuck.py 2023 06 
+#     python3 main.py 2023 06 
 #     - will download all the files from 20230601 to 20230630 and puts them
 #       in the local subdirectory ./June
 #     - reates local subdirectory if it does not exist
