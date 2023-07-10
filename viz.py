@@ -66,14 +66,21 @@ for row in masterData.itertuples():
 
 masterData['counts'] = masterData['city'].map(cityCounts)
 
-print("size")
-print(masterData.size)
-
-fig = px.scatter_geo(masterData, locations="iso_alpha", color="continent",
+fig1 = px.scatter_geo(masterData, lon="longitude", lat="latitude", color="city",
                      hover_name="city", size="counts",
                      projection="natural earth")
-fig.update_layout(mapbox_style="stamen-terrain", mapbox_center_lon=180)
-fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+fig1.update_layout(mapbox_style="stamen-terrain", mapbox_center_lon=180)
+fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+
+
+fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
+                        center=dict(lat=43.6532, lon=79.3832), zoom=1,
+                        mapbox_style="stamen-terrain")
+fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+
+
+#start Months list
+startMonths = [i for i in range(1, 13)]
 
 #Build a Plotly graph around the data
 app = Dash(__name__)
@@ -81,7 +88,10 @@ app = Dash(__name__)
 app.layout = html.Div(children=[
     html.H1(children='Where our users are'),
 
-    dcc.Graph(figure=fig),
+    dcc.Graph(figure=fig1),
+
+    dcc.Graph(figure=fig2),
+
 
     html.H3(children='Countries'),
     # dcc.Dropdown(
@@ -91,6 +101,10 @@ app.layout = html.Div(children=[
     # ),
 
     html.H3(children='Filters'),
+
+    html.H4(children='Start Month'),
+    dcc.Dropdown(
+
     # dcc.Dropdown(
     #     species,
     #     value=species[0],

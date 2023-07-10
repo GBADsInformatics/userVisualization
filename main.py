@@ -13,11 +13,11 @@ logDirectory = "VisitorLogs/"
 #
 # Demo program that shows how to copy dashboard visit logs from S3 to 
 # a local directory named after the month requested
-#     python3 monthlyDuck.py YYYY MM 
+#     python3 monthlyDuck.py YYYY MM
 # where YYYY is year and MM is month from 01 to 12 (must include the
 # leading zero)
 # Example
-#     python3 main.py 2023 06 
+#     python3 main.py 2023 06
 #     - will download all the files from 20230601 to 20230630 and puts them
 #       in the local subdirectory ./June
 #     - reates local subdirectory if it does not exist
@@ -79,20 +79,20 @@ localpath = "./" + logDirectory+month_names[mon]
 if os.path.exists(localpath) == False:
     os.mkdir(localpath)
 # Download the files from S3 and put them in the local directory
-localdir = month_names[mon]+"/"
+localdir =  logDirectory+month_names[mon]+"/"
 ret = down.downloadVLogs ( s3_client, s3_resource, "gbads-aws-access-logs", "VisitorLogs/", start_date, end_date, localdir )
 # downloSVLogs return 0 if successful and -1 on failure
 if ret != 0:
     print ( "Could not download the month stats" )
     exit ( -1 )
 # Read in a month of visitor logs into DuckDB
-log_names = month_names[mon]+"/VISITOR_LOGS*.csv"
+log_names =  logDirectory+month_names[mon]+"/VISITOR_LOGS*.csv"
 visits = duckdb.query( f"SELECT * FROM read_csv_auto('{log_names}', header=True)").to_df()
 
 # Gather some Month stats
 #     Number of visits to the dashboards
 month_stats = duckdb.query ( f"SELECT date,ip_address,iso3,country,city,dashboard FROM visits WHERE date BETWEEN '{yyyyStartStr}' AND '{yyyyEndStr}' " ).to_df()
-print ( "Statistics for "+month_names[mon]+" "+yyyy )
+print ( "Statistics for "+ logDirectory+month_names[mon]+" "+yyyy )
 print ( "There were "+str(len(month_stats))+" visits to the Dashboards" )
 
 #     Number of distinct IP's that visited the dashboards
