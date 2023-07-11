@@ -21,21 +21,13 @@ defaultYear = availableMonths[-1]
 # defaultMonth = datetime.now().month #Uses the current month as the default month
 defaultMonth = 7 #Uses the current month as the default month
 
-
-print(defaultMonth)
-print("dir = " + dataDirectory + MONTHS[defaultMonth -1] )
 #Get the data from the csv files
 masterData = pd.DataFrame()
 onlyfiles = [f for f in listdir(dataDirectory + MONTHS[defaultMonth -1] ) if isfile(join(dataDirectory + MONTHS[defaultMonth -1] , f))]
 
 for file in onlyfiles:
-    print("Really before file = " + dataDirectory + MONTHS[defaultMonth -1] + "/" + file)
-
     df = pd.read_csv(dataDirectory + MONTHS[defaultMonth -1] + "/" + file)
-
-    print("Before")
     masterData = pd.concat([masterData, df])
-    print("After")
 
 # while True:
 #     try:
@@ -79,8 +71,8 @@ fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts'
 fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
 
-#start Months list
-startMonths = [i for i in range(1, 13)]
+#Get the list of countries
+countryList = masterData['country'].unique().tolist()
 
 #Build a Plotly graph around the data
 app = Dash(__name__)
@@ -90,20 +82,20 @@ app.layout = html.Div(children=[
 
     dcc.Graph(figure=fig1),
 
-    dcc.Graph(figure=fig2),
+    dcc.Graph(figure=fig2, id="graph2"),
 
 
     html.H3(children='Countries'),
-    # dcc.Dropdown(
-    #     countries,
-    #     value=countries[0],
-    #     id="country_checklist",
-    # ),
+    dcc.Dropdown(
+        countryList,
+        value="",
+        id="country_checklist",
+    ),
 
     html.H3(children='Filters'),
 
     html.H4(children='Start Month'),
-    dcc.Dropdown(
+    # dcc.Dropdown(
 
     # dcc.Dropdown(
     #     species,
@@ -111,6 +103,28 @@ app.layout = html.Div(children=[
     #     id="species_checklist",
     # ),
 ])
+
+@app.callback(
+    Output("graph2", "figure"),
+    Input("country_checklist", "value"))
+def countryZoomIn(country):
+
+    fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
+                        center=dict(lat=43.6532, lon=79.3832), zoom=1,
+                        mapbox_style="stamen-terrain")
+
+    for row in masterData.itertuples():
+        if row.country == country:
+            latitude = row.latitude
+            longitude = row.longitude
+
+            fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=20,
+                                center=dict(lat=latitude, lon=longitude), zoom=4,
+                                mapbox_style="stamen-terrain")
+
+    fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    return fig2
+
 
 # @app.callback(
 #     Output("species_checklist", "options"),
