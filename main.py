@@ -10,6 +10,10 @@ import downloadVLogs as down
 
 logDirectory = "VisitorLogs/"
 
+#Make the main dir if needed
+if not os.path.exists(logDirectory):
+    os.makedirs(logDirectory)
+
 #
 # Demo program that shows how to copy dashboard visit logs from S3 to 
 # a local directory named after the month requested
@@ -62,6 +66,10 @@ end_date = yyyy+mm+str(last_day[mon])
 yyyyStartStr = yyyy + "-01-01 00:00:00"
 yyyyEndStr = yyyy + "-12-31 23:59:59"
 
+#Create the year dir
+if not os.path.exists(logDirectory+str(yyyy)):
+    os.makedirs(logDirectory+str(yyyy))
+
 #  Access AWS Credentials and establish session
 #  as a client
 #
@@ -75,24 +83,24 @@ s3_resource = s3f.credentials_resource ( )
 # Download a month of visitor logs
 #
 # Create a local directory if it does not exist
-localpath = "./" + logDirectory+month_names[mon]
+localpath = "./" + logDirectory+str(yyyy)+"/"+month_names[mon]
 if os.path.exists(localpath) == False:
     os.mkdir(localpath)
 # Download the files from S3 and put them in the local directory
-localdir =  logDirectory+month_names[mon]+"/"
+localdir =  logDirectory+str(yyyy)+"/"+month_names[mon]+"/"
 ret = down.downloadVLogs ( s3_client, s3_resource, "gbads-aws-access-logs", "VisitorLogs/", start_date, end_date, localdir )
 # downloSVLogs return 0 if successful and -1 on failure
 if ret != 0:
     print ( "Could not download the month stats" )
     exit ( -1 )
 # Read in a month of visitor logs into DuckDB
-log_names =  logDirectory+month_names[mon]+"/VISITOR_LOGS*.csv"
+log_names =  logDirectory+str(yyyy)+"/"+month_names[mon]+"/VISITOR_LOGS*.csv"
 visits = duckdb.query( f"SELECT * FROM read_csv_auto('{log_names}', header=True)").to_df()
 
 # Gather some Month stats
 #     Number of visits to the dashboards
 month_stats = duckdb.query ( f"SELECT date,ip_address,iso3,country,city,dashboard FROM visits WHERE date BETWEEN '{yyyyStartStr}' AND '{yyyyEndStr}' " ).to_df()
-print ( "Statistics for "+ logDirectory+month_names[mon]+" "+yyyy )
+print ( "Statistics for "+ logDirectory+str(yyyy)+"/"+month_names[mon]+" "+yyyy )
 print ( "There were "+str(len(month_stats))+" visits to the Dashboards" )
 
 #     Number of distinct IP's that visited the dashboards

@@ -1,7 +1,7 @@
 # Census Data Quality Research
 # Written By Ian McKechnie
 
-import sys
+import os
 import pandas as pd
 from dash import Dash, dcc, html, Input, Output
 import plotly.express as px
@@ -17,16 +17,16 @@ MONTHS = ['January','February','March','April','May','June','July','August','Sep
 availableYears = [i for i in range(2020, datetime.now().year)]
 availableMonths = [i for i in range(1, 13)]
 
-defaultYear = availableMonths[-1]
+defaultYear = 2023
 # defaultMonth = datetime.now().month #Uses the current month as the default month
 defaultMonth = 7 #Uses the current month as the default month
 
 #Get the data from the csv files
 masterData = pd.DataFrame()
-onlyfiles = [f for f in listdir(dataDirectory + MONTHS[defaultMonth -1] ) if isfile(join(dataDirectory + MONTHS[defaultMonth -1] , f))]
+onlyfiles = [f for f in listdir(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] ) if isfile(join(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] , f))]
 
 for file in onlyfiles:
-    df = pd.read_csv(dataDirectory + MONTHS[defaultMonth -1] + "/" + file)
+    df = pd.read_csv(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] + "/" + file)
     masterData = pd.concat([masterData, df])
 
 # while True:
@@ -74,6 +74,15 @@ fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 #Get the list of countries
 countryList = masterData['country'].unique().tolist()
 
+#Create a list of the dates
+dateList = []
+for year in os.listdir("VisitorLogs"):
+    for month in os.listdir("VisitorLogs/" + year):
+        dateList.append(year + " " + month)
+
+#Sort the list of dates
+dateList.sort(key = lambda date: datetime.strptime(date, '%Y %B'))
+
 #Build a Plotly graph around the data
 app = Dash(__name__)
 
@@ -85,7 +94,7 @@ app.layout = html.Div(children=[
     dcc.Graph(figure=fig2, id="graph2"),
 
 
-    html.H3(children='Countries'),
+    html.H3(children='Zoom in on a country'),
     dcc.Dropdown(
         countryList,
         value="",
@@ -93,8 +102,11 @@ app.layout = html.Div(children=[
     ),
 
     html.H3(children='Filters'),
+    html.H4(children='Start date'),
 
-    html.H4(children='Start Month'),
+    html.H4(children='End date'),
+
+
     # dcc.Dropdown(
 
     # dcc.Dropdown(
