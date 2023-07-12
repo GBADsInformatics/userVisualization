@@ -103,17 +103,22 @@ app.layout = html.Div(children=[
 
     html.H3(children='Filters'),
     html.H4(children='Start date'),
+    dcc.Dropdown(
+        options=[
+            {'label': date, 'value': date} for date in dateList
+        ],
+        value=dateList[0],
+        id="start_date",
+    ),
 
     html.H4(children='End date'),
-
-
-    # dcc.Dropdown(
-
-    # dcc.Dropdown(
-    #     species,
-    #     value=species[0],
-    #     id="species_checklist",
-    # ),
+    dcc.Dropdown(
+        options=[
+            {'label': date, 'value': date} for date in dateList
+        ],
+        value=dateList[-1],
+        id="end_date",
+    ),
 ])
 
 @app.callback(
@@ -136,6 +141,13 @@ def countryZoomIn(country):
 
     fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig2
+
+@app.callback(
+    Output("end_date", "options"),
+    Input("start_date", "value"))
+def update_end_date(value):
+    index = dateList.index(value)
+    return dateList[index:]
 
 
 # @app.callback(
