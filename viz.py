@@ -10,6 +10,20 @@ import plotly.graph_objects as go
 from os import listdir
 from os.path import isfile, join
 
+def createDf(StartYYYYMM, endYYYYMM):
+    #Create a dataframe for the data
+    df = pd.DataFrame()
+
+    #Get the list of files
+    onlyfiles = [f for f in listdir(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] ) if isfile(join(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] , f))]
+
+    #Loop through the files and add them to the dataframe
+    for file in onlyfiles:
+        df = pd.concat([df, pd.read_csv(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] + "/" + file)])
+
+    #Return the dataframe
+    return df
+
 dataDirectory = "VisitorLogs/"
 MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
@@ -89,10 +103,9 @@ app = Dash(__name__)
 app.layout = html.Div(children=[
     html.H1(children='Where our users are'),
 
-    dcc.Graph(figure=fig1),
+    dcc.Graph(figure=fig1, id="graph1"),
 
     dcc.Graph(figure=fig2, id="graph2"),
-
 
     html.H3(children='Zoom in on a country'),
     dcc.Dropdown(
@@ -121,6 +134,7 @@ app.layout = html.Div(children=[
     ),
 ])
 
+
 @app.callback(
     Output("graph2", "figure"),
     Input("country_checklist", "value"))
@@ -142,121 +156,45 @@ def countryZoomIn(country):
     fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig2
 
+
 @app.callback(
     Output("end_date", "options"),
     Input("start_date", "value"))
 def update_end_date(value):
+
     index = dateList.index(value)
+
+    updateGraph1(dateList[index:])
+    updateGraph2(dateList[index:])
+
     return dateList[index:]
 
 
-# @app.callback(
-#     Output("species_checklist", "options"),
-#     Input("country_checklist", "value"))
-# def update_species_checklist(country):
-#     # Step one: Get FAO data
-#     species = ["Cattle","Sheep","Goats","Pigs","Chickens"]
+@app.callback(
+    Output("graph1", "figure")
+)
+def updateGraph1(range):
+    fig1 = px.scatter_geo(masterData, lon="longitude", lat="latitude", color="city",
+                     hover_name="city", size="counts",
+                     projection="natural earth")
+    fig1.update_layout(mapbox_style="stamen-terrain", mapbox_center_lon=180)
+    fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
-#     # Step 3: Get Census data
-#     try:
-#         csv_data = pd.read_csv(f"censusData/{country}.csv")
-#         species = species + csv_data["species"].tolist() # Add the species from the csv file to the list of species
-#         species = list(dict.fromkeys(species))  # Remove duplicates from the list of species
-
-#     except:
-#         print("Error, count not find the correct csv file")
-
-#     # Step 4: Get National data
-#     try:
-#         nationalData = pd.read_csv(f"nationalData/{country}.csv")
-#         species = species + nationalData["species"].tolist() # Add the species from the csv file to the list of species
-#         species = list(dict.fromkeys(species))  # Remove duplicates from the list of species
-
-#     except:
-#         print("Error, count not find the correct csv file")
-
-#     return species
-
-# @app.callback(
-#     Output("graph", "figure"),
-#     Input("species_checklist", "value"),
-#     Input("country_checklist", "value"))
-# def update_line_chart(specie, country):
-#     # Step one: Get FAO data
-#     countries = ["Greece", "Ethiopia", "Canada", "USA", "Ireland", "India", "Brazil", "Botswana", "Egypt", "South Africa", "Indonesia", "China", "Australia", "NewZealand", "Japan", "Mexico", "Argentina", "Chile"]
-#     species = ["Cattle","Sheep","Goats","Pigs","Chickens"]
-
-#     if specie == None:
-#         specie = species[0]
-
-#     if country == "USA":
-#         fao_data = fao.get_data("United%20States%20of%20America", specie)
-
-#     elif country == None:
-#         fao_data = fao.get_data(countries[0], specie)
-
-#     else:
-#         fao_data = fao.get_data(country, specie)
-
-#     fao_data = fao.formatFAOData(fao_data)
-
-#     # Step two: Get woah data
-#     if country == "USA":
-#         woah_data = woah.get_data("United%20States%20of%20America", specie)
-#     else:
-#         woah_data = woah.get_data(country, specie)
-
-#     woah_data = woah.formatWoahData(woah_data)
-
-#     # Step 3: Get Census data
-#     csv_data, csv_index_list, species = API_helpers.helperFunctions.getFormattedCensusData(country, specie, species)
-
-#     # Step 4: Get National data
-#     nationalData, nationalData_index_list, species = API_helpers.helperFunctions.getFormattedNationalData(country, specie, species)
-
-#     # Build a master dataframe
-#     #master_df = pd.concat([fao_data, woah_data, csv_data.iloc, nationalData.iloc])
-#     master_df = pd.concat([fao_data, woah_data, csv_data.iloc[csv_index_list], nationalData.iloc[nationalData_index_list]])
-
-#     # Build the plotly graph
-#     fig = px.line(
-#             master_df,
-#             x=master_df["year"],
-#             y=master_df["population"],
-#             color=master_df["source"],
-#             markers=True)
-
-#     fig.update_yaxes(
-#         type='linear',
-#         mirror=True,
-#         ticks='outside',
-#         showline=True,
-#         linecolor='black',
-#         gridcolor='lightgrey'
-#     )
-
-#     fig.update_xaxes(
-#         mirror=True,
-#         ticks='outside',
-#         showline=True,
-#         linecolor='black',
-#         gridcolor='lightgrey'
-#     )
+    return fig1
 
 
-#     fig.update_traces(line=dict(width=5))
+@app.callback(
+    Output("graph2", "figure")
+)
+def updateGraph2(range):
+    fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
+                        center=dict(lat=43.6532, lon=79.3832), zoom=1,
+                        mapbox_style="stamen-terrain")
+    fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
-#     fig.update_layout(
-#         title=f"Population of {specie} in {country}",
-#         xaxis_title="Year",
-#         yaxis_title="Population",
-#         legend_title="Sources",
-#         font = dict(
-#             size=18,
-#         ),
-#         plot_bgcolor='white',
-#     )
-#     return fig
+    return fig2
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
