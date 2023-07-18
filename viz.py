@@ -7,41 +7,79 @@ from dash import Dash, dcc, html, Input, Output
 import plotly.express as px
 from datetime import datetime
 import plotly.graph_objects as go
+
 from os import listdir
 from os.path import isfile, join
-
-def createDf(StartYYYYMM, endYYYYMM):
-    #Create a dataframe for the data
-    df = pd.DataFrame()
-
-    #Get the list of files
-    onlyfiles = [f for f in listdir(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] ) if isfile(join(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] , f))]
-
-    #Loop through the files and add them to the dataframe
-    for file in onlyfiles:
-        df = pd.concat([df, pd.read_csv(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] + "/" + file)])
-
-    #Return the dataframe
-    return df
+from dateConverter import DateConverter
+from date import Date
 
 dataDirectory = "VisitorLogs/"
 MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
-#Set the default date ranges
-availableYears = [i for i in range(2020, datetime.now().year)]
-availableMonths = [i for i in range(1, 13)]
+def createDf(startDate, endDate):
+    masterData = pd.DataFrame()
 
-defaultYear = 2023
-# defaultMonth = datetime.now().month #Uses the current month as the default month
-defaultMonth = 7 #Uses the current month as the default month
+    startYear, startMonth = DateConverter.getMonthAndYear(startDate)
+    endYear, endMonth = DateConverter.getMonthAndYear(endDate)
 
-#Get the data from the csv files
-masterData = pd.DataFrame()
-onlyfiles = [f for f in listdir(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] ) if isfile(join(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] , f))]
+    for dir in listdir(dataDirectory):
+        if dir >= str(startYear) and dir <= str(endYear):
+            for subDir in listdir(dataDirectory + "/" + dir):
+                if MONTHS.index(subDir) >= startMonth and MONTHS.index(subDir) <= endMonth:
+                    for file in listdir(dataDirectory + "/" + dir + "/" + subDir):
+                        df = pd.read_csv(dataDirectory + "/" + dir + "/" + subDir + "/" + file)
+                        masterData = pd.concat([masterData, df])
 
-for file in onlyfiles:
-    df = pd.read_csv(dataDirectory + str(defaultYear) + "/" + MONTHS[defaultMonth -1] + "/" + file)
-    masterData = pd.concat([masterData, df])
+    if masterData.empty:
+        masterData = pd.DataFrame(columns=['city', 'country', 'latitude', 'longitude', 'counts'])
+        return masterData
+
+    ##Need to add the quantity of each city to itself
+    cityCounts = {}
+    for row in masterData.itertuples():
+        if cityCounts.get(row.city) == None:
+            cityCounts[row.city] = 1
+        else:
+            cityCounts[row.city] = cityCounts[row.city] + 1
+
+    masterData['counts'] = masterData['city'].map(cityCounts)
+
+    return masterData
+
+
+def createFig1(masterData):
+
+    if masterData.shape[0]:
+        return px.scatter_geo()
+
+    fig1 = px.scatter_geo(masterData, lon="longitude", lat="latitude", color="city",
+                     hover_name="city", size="counts",
+                     projection="natural earth")
+    fig1.update_layout(mapbox_style="stamen-terrain", mapbox_center_lon=180)
+    fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+
+
+def createFig2(masterData, country=None):
+
+    # if masterData.shape[0]:
+    #     return px.density_mapbox()
+
+    fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
+                        center=dict(lat=43.6532, lon=79.3832), zoom=1,
+                        mapbox_style="stamen-terrain")
+
+    if country != "":
+        for row in masterData.itertuples():
+            if row.country == country:
+                latitude = row.latitude
+                longitude = row.longitude
+
+                fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=20,
+                                    center=dict(lat=latitude, lon=longitude), zoom=4,
+                                    mapbox_style="stamen-terrain")
+
+    fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+
 
 # while True:
 #     try:
@@ -62,28 +100,10 @@ for file in onlyfiles:
 #         print("Need to download the data for this month")
 #         quit()
 
-##Need to add the quantity of each city to itself
-cityCounts = {}
-for row in masterData.itertuples():
-    if cityCounts.get(row.city) == None:
-        cityCounts[row.city] = 1
-    else:
-        cityCounts[row.city] = cityCounts[row.city] + 1
+masterData = createDf("2023 July", "2023 July")
 
-masterData['counts'] = masterData['city'].map(cityCounts)
-
-fig1 = px.scatter_geo(masterData, lon="longitude", lat="latitude", color="city",
-                     hover_name="city", size="counts",
-                     projection="natural earth")
-fig1.update_layout(mapbox_style="stamen-terrain", mapbox_center_lon=180)
-fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-
-
-fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
-                        center=dict(lat=43.6532, lon=79.3832), zoom=1,
-                        mapbox_style="stamen-terrain")
-fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-
+fig1 = createFig1(masterData)
+fig2 = createFig2(masterData)
 
 #Get the list of countries
 countryList = masterData['country'].unique().tolist()
@@ -92,7 +112,8 @@ countryList = masterData['country'].unique().tolist()
 dateList = []
 for year in os.listdir("VisitorLogs"):
     for month in os.listdir("VisitorLogs/" + year):
-        dateList.append(year + " " + month)
+        dateList.append(DateConverter.convertYearAndMonth(int(year), month))
+        # dateList.append(year + " " + month)
 
 #Sort the list of dates
 dateList.sort(key = lambda date: datetime.strptime(date, '%Y %B'))
@@ -135,66 +156,49 @@ app.layout = html.Div(children=[
 ])
 
 
-@app.callback(
-    Output("graph2", "figure"),
-    Input("country_checklist", "value"))
-def countryZoomIn(country):
+# @app.callback(
+#     Output("graph2", "figure"),
+#     Input("country_checklist", "value"))
+# def countryZoomIn(country):
 
-    fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
-                        center=dict(lat=43.6532, lon=79.3832), zoom=1,
-                        mapbox_style="stamen-terrain")
+#     fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
+#                         center=dict(lat=43.6532, lon=79.3832), zoom=1,
+#                         mapbox_style="stamen-terrain")
 
-    for row in masterData.itertuples():
-        if row.country == country:
-            latitude = row.latitude
-            longitude = row.longitude
+#     for row in masterData.itertuples():
+#         if row.country == country:
+#             latitude = row.latitude
+#             longitude = row.longitude
 
-            fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=20,
-                                center=dict(lat=latitude, lon=longitude), zoom=4,
-                                mapbox_style="stamen-terrain")
+#             fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=20,
+#                                 center=dict(lat=latitude, lon=longitude), zoom=4,
+#                                 mapbox_style="stamen-terrain")
 
-    fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-    return fig2
+#     fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+#     return fig2
 
 
 @app.callback(
     Output("end_date", "options"),
     Input("start_date", "value"))
 def update_end_date(value):
-
     index = dateList.index(value)
-
-    updateGraph1(dateList[index:])
-    updateGraph2(dateList[index:])
-
     return dateList[index:]
 
 
 @app.callback(
-    Output("graph1", "figure")
-)
-def updateGraph1(range):
-    fig1 = px.scatter_geo(masterData, lon="longitude", lat="latitude", color="city",
-                     hover_name="city", size="counts",
-                     projection="natural earth")
-    fig1.update_layout(mapbox_style="stamen-terrain", mapbox_center_lon=180)
-    fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    Output("graph1", "figure"),
+    Output("graph2", "figure"),
+    Input("start_date", "value"),
+    Input("end_date", "value"),
+    Input("country_checklist", "value")
+    )
+def updateGraph1(start, end, country):
+    masterData = createDf(start, end)
+    fig1 = createFig1(masterData)
+    fig2 = createFig2(masterData, country)
 
-    return fig1
-
-
-@app.callback(
-    Output("graph2", "figure")
-)
-def updateGraph2(range):
-    fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
-                        center=dict(lat=43.6532, lon=79.3832), zoom=1,
-                        mapbox_style="stamen-terrain")
-    fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-
-    return fig2
-
-
+    return fig1, fig2
 
 if __name__ == '__main__':
     app.run_server(debug=True)
