@@ -49,7 +49,7 @@ def createDf(startDate, endDate):
 
 def createFig1(masterData):
 
-    if masterData.shape[0]:
+    if masterData.shape[0] == 0:
         return px.scatter_geo()
 
     fig1 = px.scatter_geo(masterData, lon="longitude", lat="latitude", color="city",
@@ -58,11 +58,13 @@ def createFig1(masterData):
     fig1.update_layout(mapbox_style="stamen-terrain", mapbox_center_lon=180)
     fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
+    return fig1
+
 
 def createFig2(masterData, country=None):
 
-    # if masterData.shape[0]:
-    #     return px.density_mapbox()
+    if masterData.shape[0] == 0:
+        return px.density_mapbox()
 
     fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
                         center=dict(lat=43.6532, lon=79.3832), zoom=1,
@@ -79,6 +81,8 @@ def createFig2(masterData, country=None):
                                     mapbox_style="stamen-terrain")
 
     fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+
+    return fig2
 
 
 # while True:
@@ -155,27 +159,6 @@ app.layout = html.Div(children=[
     ),
 ])
 
-
-# @app.callback(
-#     Output("graph2", "figure"),
-#     Input("country_checklist", "value"))
-# def countryZoomIn(country):
-
-#     fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
-#                         center=dict(lat=43.6532, lon=79.3832), zoom=1,
-#                         mapbox_style="stamen-terrain")
-
-#     for row in masterData.itertuples():
-#         if row.country == country:
-#             latitude = row.latitude
-#             longitude = row.longitude
-
-#             fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=20,
-#                                 center=dict(lat=latitude, lon=longitude), zoom=4,
-#                                 mapbox_style="stamen-terrain")
-
-#     fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-#     return fig2
 
 
 @app.callback(
