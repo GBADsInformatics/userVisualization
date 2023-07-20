@@ -24,9 +24,15 @@ def performCounts(masterData):
         else:
             cityCounts[row.city] = cityCounts[row.city] + 1
 
-    masterData['counts'] = masterData['city'].map(cityCounts)
+    masterData['Dashboards uses in the city'] = masterData['city'].map(cityCounts)
 
     return masterData
+
+
+def removePII(masterData):
+    masterData = masterData.drop(columns=['ip_address', 'isp', 'success', 'iso3', 'timezone'])
+    return masterData
+
 
 def createDf(startDate, endDate):
     masterData = pd.DataFrame()
@@ -43,8 +49,11 @@ def createDf(startDate, endDate):
                         masterData = pd.concat([masterData, df])
 
     if masterData.empty:
-        masterData = pd.DataFrame(columns=['city', 'country', 'latitude', 'longitude', 'counts'])
+        masterData = pd.DataFrame(columns=['city', 'country', 'latitude', 'longitude', 'Dashboards uses in the city'])
         return masterData
+
+    masterData = masterData[masterData['dashboard'] != 'doesnotexist']
+    masterData = removePII(masterData)
 
     return masterData
 
@@ -56,7 +65,7 @@ def createFig1(masterData, country=None):
         fig1 =  px.density_mapbox(mapbox_style="stamen-toner")
 
     else:
-        fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
+        fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='Dashboards uses in the city', radius=10,
                             center=dict(lat=43.6532, lon=79.3832), zoom=1,
                             mapbox_style="stamen-toner")
 
@@ -66,7 +75,7 @@ def createFig1(masterData, country=None):
                     latitude = row.latitude
                     longitude = row.longitude
 
-                    fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=20,
+                    fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='Dashboards uses in the city', radius=20,
                                         center=dict(lat=latitude, lon=longitude), zoom=4,
                                         mapbox_style="stamen-toner")
 
@@ -209,4 +218,4 @@ def updateGraph1(start, end, country, dashboards):
     return fig1, table
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
