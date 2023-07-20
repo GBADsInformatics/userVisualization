@@ -16,6 +16,18 @@ from date import Date
 dataDirectory = "VisitorLogs/"
 MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
+def performCounts(masterData):
+    cityCounts = {}
+    for row in masterData.itertuples():
+        if cityCounts.get(row.city) == None:
+            cityCounts[row.city] = 1
+        else:
+            cityCounts[row.city] = cityCounts[row.city] + 1
+
+    masterData['counts'] = masterData['city'].map(cityCounts)
+
+    return masterData
+
 def createDf(startDate, endDate):
     masterData = pd.DataFrame()
 
@@ -34,36 +46,29 @@ def createDf(startDate, endDate):
         masterData = pd.DataFrame(columns=['city', 'country', 'latitude', 'longitude', 'counts'])
         return masterData
 
-    ##Need to add the quantity of each city to itself
-    cityCounts = {}
-    for row in masterData.itertuples():
-        if cityCounts.get(row.city) == None:
-            cityCounts[row.city] = 1
-        else:
-            cityCounts[row.city] = cityCounts[row.city] + 1
-
-    masterData['counts'] = masterData['city'].map(cityCounts)
-
     return masterData
+
 
 def createFig1(masterData, country=None):
 
-    if masterData.shape[0] == 0:
-        return px.density_mapbox()
+    #This is bugged
+    if masterData.empty or masterData.shape[0] == 0:
+        fig1 =  px.density_mapbox(mapbox_style="stamen-toner")
 
-    fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
-                        center=dict(lat=43.6532, lon=79.3832), zoom=1,
-                        mapbox_style="stamen-toner")
+    else:
+        fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
+                            center=dict(lat=43.6532, lon=79.3832), zoom=1,
+                            mapbox_style="stamen-toner")
 
-    if country != "":
-        for row in masterData.itertuples():
-            if row.country == country:
-                latitude = row.latitude
-                longitude = row.longitude
+        if country != "":
+            for row in masterData.itertuples():
+                if row.country == country:
+                    latitude = row.latitude
+                    longitude = row.longitude
 
-                fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=20,
-                                    center=dict(lat=latitude, lon=longitude), zoom=4,
-                                    mapbox_style="stamen-terrain")
+                    fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=20,
+                                        center=dict(lat=latitude, lon=longitude), zoom=4,
+                                        mapbox_style="stamen-toner")
 
     fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
@@ -87,7 +92,8 @@ def createTable(masterData):
 
 
 def removeDashboards(masterData, dashboards):
-    return masterData[~masterData['dashboard'].isin(dashboards)]
+    masterData = masterData[masterData['dashboard'].isin(dashboards)]
+    return masterData
 
 # while True:
 #     try:
@@ -109,6 +115,7 @@ def removeDashboards(masterData, dashboards):
 #         quit()
 
 masterData = createDf("2023 April", "2023 July")
+masterData = performCounts(masterData)
 
 fig1 = createFig1(masterData)
 
@@ -194,6 +201,7 @@ def updateGraph1(start, end, country, dashboards):
     masterData = createDf(start, end)
 
     masterData = removeDashboards(masterData, dashboards)
+    performCounts(masterData)
 
     fig1 = createFig1(masterData, country)
     table = createTable(masterData)
