@@ -46,29 +46,14 @@ def createDf(startDate, endDate):
 
     return masterData
 
-
-def createFig1(masterData):
-
-    if masterData.shape[0] == 0:
-        return px.scatter_geo()
-
-    fig1 = px.scatter_geo(masterData, lon="longitude", lat="latitude", color="city",
-                     hover_name="city", size="counts",
-                     projection="natural earth")
-    fig1.update_layout(mapbox_style="stamen-terrain", mapbox_center_lon=180)
-    fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-
-    return fig1
-
-
-def createFig2(masterData, country=None):
+def createFig1(masterData, country=None):
 
     if masterData.shape[0] == 0:
         return px.density_mapbox()
 
-    fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
+    fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=10,
                         center=dict(lat=43.6532, lon=79.3832), zoom=1,
-                        mapbox_style="stamen-terrain")
+                        mapbox_style="stamen-toner")
 
     if country != "":
         for row in masterData.itertuples():
@@ -76,14 +61,33 @@ def createFig2(masterData, country=None):
                 latitude = row.latitude
                 longitude = row.longitude
 
-                fig2 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=20,
+                fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='counts', radius=20,
                                     center=dict(lat=latitude, lon=longitude), zoom=4,
                                     mapbox_style="stamen-terrain")
 
-    fig2.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
-    return fig2
+    return fig1
 
+
+def createDashboardChecklist(masterData):
+    return dcc.Checklist(
+        id='country-checklist',
+        options=[{'label': i, 'value': i} for i in masterData['dashboard'].unique()],
+        value=masterData['dashboard'].unique(),
+        labelStyle={'display': 'inline-block', "display": "flex", "align-items": "center"},
+        style={'width': '100%'}
+    )
+
+
+def createTable(masterData):
+    return go.Figure(data=[go.Table(header=dict(values=masterData.columns),
+                 cells=dict(values=masterData.transpose().values.tolist()))
+                     ])
+
+
+def removeDashboards(masterData, dashboards):
+    return masterData[~masterData['dashboard'].isin(dashboards)]
 
 # while True:
 #     try:
@@ -104,10 +108,9 @@ def createFig2(masterData, country=None):
 #         print("Need to download the data for this month")
 #         quit()
 
-masterData = createDf("2023 July", "2023 July")
+masterData = createDf("2023 April", "2023 July")
 
 fig1 = createFig1(masterData)
-fig2 = createFig2(masterData)
 
 #Get the list of countries
 countryList = masterData['country'].unique().tolist()
@@ -122,6 +125,12 @@ for year in os.listdir("VisitorLogs"):
 #Sort the list of dates
 dateList.sort(key = lambda date: datetime.strptime(date, '%Y %B'))
 
+#Create the table
+table = createTable(masterData)
+
+#Create the dashboard checklist
+dashboardChecklist = createDashboardChecklist(masterData)
+
 #Build a Plotly graph around the data
 app = Dash(__name__)
 
@@ -129,8 +138,6 @@ app.layout = html.Div(children=[
     html.H1(children='Where our users are'),
 
     dcc.Graph(figure=fig1, id="graph1"),
-
-    dcc.Graph(figure=fig2, id="graph2"),
 
     html.H3(children='Zoom in on a country'),
     dcc.Dropdown(
@@ -157,6 +164,12 @@ app.layout = html.Div(children=[
         value=dateList[-1],
         id="end_date",
     ),
+
+
+    html.H3(children='Dashboards'),
+    dashboardChecklist,
+
+    dcc.Graph(figure=table, id="table")
 ])
 
 
@@ -171,17 +184,21 @@ def update_end_date(value):
 
 @app.callback(
     Output("graph1", "figure"),
-    Output("graph2", "figure"),
+    Output("table", "figure"),
     Input("start_date", "value"),
     Input("end_date", "value"),
-    Input("country_checklist", "value")
+    Input("country_checklist", "value"),
+    Input("country-checklist", "value")
     )
-def updateGraph1(start, end, country):
+def updateGraph1(start, end, country, dashboards):
     masterData = createDf(start, end)
-    fig1 = createFig1(masterData)
-    fig2 = createFig2(masterData, country)
 
-    return fig1, fig2
+    masterData = removeDashboards(masterData, dashboards)
+
+    fig1 = createFig1(masterData, country)
+    table = createTable(masterData)
+
+    return fig1, table
 
 if __name__ == '__main__':
     app.run_server(debug=True)
