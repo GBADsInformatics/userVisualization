@@ -9,12 +9,21 @@ from datetime import datetime
 import plotly.graph_objects as go
 
 from os import listdir
-from os.path import isfile, join
 from dateConverter import DateConverter
-from date import Date
 
 dataDirectory = "VisitorLogs/"
 MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+countryCenters = {
+    "United States of America (the)": {"lat": 37.0902, "lon": -95.7129, "zoom": 2.5},
+    "Canada": {"lat": 56.1304, "lon": -106.3468, "zoom": 2.5},
+    "Australia": {"lat": -25.2744, "lon": 133.7751, "zoom": 3},
+    "Russian Federation (the)": {"lat": 61.5240, "lon": 105.3188, "zoom": 2},
+    "Brazil": {"lat": -14.2350, "lon": -51.9253, "zoom": 2.5},
+    "India": {"lat": 20.5937, "lon": 78.9629, "zoom": 2.5},
+    "China": {"lat": 35.8617, "lon": 104.1954, "zoom": 2.5},
+    "United Kingdom of Great Britain and Northern Ireland (the)": {"lat": 55.3781, "lon": -3.4360, "zoom": 4},
+    "Mexico": {"lat": 23.6345, "lon": -102.5528, "zoom": 2.5},
+}
 
 def performCounts(masterData):
     cityCounts = {}
@@ -24,13 +33,13 @@ def performCounts(masterData):
         else:
             cityCounts[row.city] = cityCounts[row.city] + 1
 
-    masterData['Dashboards uses in the city'] = masterData['city'].map(cityCounts)
+    masterData['Dashboards viewed in this city'] = masterData['city'].map(cityCounts)
 
     return masterData
 
 
 def removePII(masterData):
-    masterData = masterData.drop(columns=['ip_address', 'isp', 'success', 'iso3', 'timezone'])
+    masterData = masterData.drop(columns=['ip_address', 'isp', 'success', 'timezone'])
     return masterData
 
 
@@ -49,7 +58,7 @@ def createDf(startDate, endDate):
                         masterData = pd.concat([masterData, df])
 
     if masterData.empty:
-        masterData = pd.DataFrame(columns=['city', 'country', 'latitude', 'longitude', 'Dashboards uses in the city'])
+        masterData = pd.DataFrame(columns=['city', 'country', 'latitude', 'longitude', 'Dashboards viewed in this city'])
         return masterData
 
     masterData = masterData[masterData['dashboard'] != 'doesnotexist']
@@ -65,19 +74,32 @@ def createFig1(masterData, country=None):
         fig1 =  px.density_mapbox(mapbox_style="stamen-toner")
 
     else:
-        fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='Dashboards uses in the city', radius=10,
-                            center=dict(lat=43.6532, lon=79.3832), zoom=1,
-                            mapbox_style="stamen-toner")
+        latitude = 3.6532
+        longitude =79.3832
+        zm = 0.5
+        rds = 10
 
         if country != "":
             for row in masterData.itertuples():
                 if row.country == country:
-                    latitude = row.latitude
-                    longitude = row.longitude
+                    if country in countryCenters:
+                        latitude = countryCenters[country]["lat"]
+                        longitude = countryCenters[country]["lon"]
+                        zm = countryCenters[country]["zoom"]
 
-                    fig1 = px.density_mapbox(masterData, lat='latitude', lon='longitude', z='Dashboards uses in the city', radius=20,
-                                        center=dict(lat=latitude, lon=longitude), zoom=4,
-                                        mapbox_style="stamen-toner")
+                    else:
+                        latitude = row.latitude
+                        longitude = row.longitude
+                        zm = 4
+
+        fig1 = px.density_mapbox(masterData,
+                                lat='latitude',
+                                lon='longitude',
+                                z='Dashboards viewed in this city',
+                                radius=rds,
+                                center=dict(lat=latitude, lon=longitude),
+                                zoom=zm,
+                                mapbox_style="stamen-toner")
 
     fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
@@ -86,7 +108,7 @@ def createFig1(masterData, country=None):
 
 def createDashboardChecklist(masterData):
     return dcc.Checklist(
-        id='country-checklist',
+        id='dashboard-checklist',
         options=[{'label': i, 'value': i} for i in masterData['dashboard'].unique()],
         value=masterData['dashboard'].unique(),
         labelStyle={'display': 'inline-block', "display": "flex", "align-items": "center"},
@@ -159,7 +181,7 @@ app.layout = html.Div(children=[
     dcc.Dropdown(
         countryList,
         value="",
-        id="country_checklist",
+        id="country-zoom",
     ),
 
     html.H3(children='Filters'),
@@ -203,11 +225,16 @@ def update_end_date(value):
     Output("table", "figure"),
     Input("start_date", "value"),
     Input("end_date", "value"),
-    Input("country_checklist", "value"),
-    Input("country-checklist", "value")
+    Input("country-zoom", "value"),
+    Input("dashboard-checklist", "value")
     )
 def updateGraph1(start, end, country, dashboards):
     masterData = createDf(start, end)
+
+    if masterData.empty:
+        masterData = pd.DataFrame(columns=['city', 'country', 'latitude', 'longitude', 'Dashboards viewed in this city'])
+        table = go.Figure(data=[go.Table(header=dict(values=masterData.columns)) ])
+        return masterData, table
 
     masterData = removeDashboards(masterData, dashboards)
     performCounts(masterData)
@@ -218,4 +245,4 @@ def updateGraph1(start, end, country, dashboards):
     return fig1, table
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
