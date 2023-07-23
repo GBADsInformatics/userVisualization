@@ -39,7 +39,12 @@ def performCounts(masterData):
 
 
 def removePII(masterData):
-    masterData = masterData.drop(columns=['ip_address', 'isp', 'success', 'timezone'])
+    if 'success' in masterData.columns:
+        masterData = masterData.drop(columns=['ip_address', 'isp', 'success', 'timezone'])
+
+    else:
+        masterData = masterData.drop(columns=['ip_address', 'isp', 'timezone'])
+
     return masterData
 
 
@@ -68,41 +73,34 @@ def createDf(startDate, endDate):
 
 
 def createFig1(masterData, country=None):
+    latitude = 3.6532
+    longitude =79.3832
+    zm = 0.5
+    rds = 10
 
-    #This is bugged
-    if masterData.empty or masterData.shape[0] == 0:
-        fig1 =  px.density_mapbox(mapbox_style="stamen-toner")
+    if country != "":
+        for row in masterData.itertuples():
+            if row.country == country:
+                if country in countryCenters:
+                    latitude = countryCenters[country]["lat"]
+                    longitude = countryCenters[country]["lon"]
+                    zm = countryCenters[country]["zoom"]
 
-    else:
-        latitude = 3.6532
-        longitude =79.3832
-        zm = 0.5
-        rds = 10
+                else:
+                    latitude = row.latitude
+                    longitude = row.longitude
+                    zm = 4
 
-        if country != "":
-            for row in masterData.itertuples():
-                if row.country == country:
-                    if country in countryCenters:
-                        latitude = countryCenters[country]["lat"]
-                        longitude = countryCenters[country]["lon"]
-                        zm = countryCenters[country]["zoom"]
-
-                    else:
-                        latitude = row.latitude
-                        longitude = row.longitude
-                        zm = 4
-
-        fig1 = px.density_mapbox(masterData,
-                                lat='latitude',
-                                lon='longitude',
-                                z='Dashboards viewed in this city',
-                                radius=rds,
-                                center=dict(lat=latitude, lon=longitude),
-                                zoom=zm,
-                                mapbox_style="stamen-toner")
+    fig1 = px.density_mapbox(masterData,
+        lat='latitude',
+        lon='longitude',
+        z='Dashboards viewed in this city',
+        radius=rds,
+        center=dict(lat=latitude, lon=longitude),
+        zoom=zm,
+        mapbox_style="stamen-toner")
 
     fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-
     return fig1
 
 
@@ -232,9 +230,9 @@ def updateGraph1(start, end, country, dashboards):
     masterData = createDf(start, end)
 
     if masterData.empty:
-        masterData = pd.DataFrame(columns=['city', 'country', 'latitude', 'longitude', 'Dashboards viewed in this city'])
-        table = go.Figure(data=[go.Table(header=dict(values=masterData.columns)) ])
-        return masterData, table
+        fig1 = createFig1(masterData, country)
+        table = createTable(masterData)
+        return fig1, table
 
     masterData = removeDashboards(masterData, dashboards)
     performCounts(masterData)
