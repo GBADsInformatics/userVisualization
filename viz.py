@@ -14,7 +14,7 @@ from dateConverter import DateConverter
 dataDirectory = "VisitorLogs/"
 MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 countryCenters = {
-    "United States of America (the)": {"lat": 37.0902, "lon": -95.7129, "zoom": 2.5},
+    "United States of America (the)": {"lat": 39.8282, "lon": -98.5796, "zoom": 3},
     "Canada": {"lat": 56.1304, "lon": -106.3468, "zoom": 2.5},
     "Australia": {"lat": -25.2744, "lon": 133.7751, "zoom": 3},
     "Russian Federation (the)": {"lat": 61.5240, "lon": 105.3188, "zoom": 2},
@@ -175,36 +175,52 @@ app.layout = html.Div(children=[
 
     dcc.Graph(figure=fig1, id="graph1"),
 
-    html.H3(children='Zoom in on a country'),
-    dcc.Dropdown(
-        countryList,
-        value="",
-        id="country-zoom",
-    ),
+    html.Div([
+
+        html.H3(children='Zoom in on a country'),
+        dcc.Dropdown(
+            countryList,
+            value="",
+            id="country-zoom",
+        ),
+
+    ], style={'width': '40%', 'display': 'inline-block', "align-items": "center" }),
 
     html.H3(children='Filters'),
-    html.H4(children='Start date'),
-    dcc.Dropdown(
-        options=[
-            {'label': date, 'value': date} for date in dateList
-        ],
-        value=dateList[0],
-        id="start_date",
-    ),
+    html.H4(children='Filter by date'),
+    html.Div([
+        html.Div([
+            html.H4(children='Start date'),
+            dcc.Dropdown(
+                options=[
+                    {'label': date, 'value': date} for date in dateList
+                ],
+                value=dateList[0],
+                id="start_date",
+            ),
+        ], style={'width': '80%', 'display': 'inline-block', "align-items": "center" }),
 
-    html.H4(children='End date'),
-    dcc.Dropdown(
-        options=[
-            {'label': date, 'value': date} for date in dateList
-        ],
-        value=dateList[-1],
-        id="end_date",
-    ),
+        html.Div([
+            html.H4(children='End date'),
+            dcc.Dropdown(
+                options=[
+                    {'label': date, 'value': date} for date in dateList
+                ],
+                value=dateList[-1],
+                id="end_date",
+            ),
+        ], style={'width': '80%', 'display': 'inline-block', "align-items": "center" })
 
+    #align items horizontally
+    ], style={'width': '40%', 'display': 'inline-block', "display": "flex", "align-items": "center", "justify-content": "space-between" }),
 
-    html.H3(children='Dashboards'),
+    html.H4(children='Filter by Dashboard'),
+    html.H4(children='Dashboards'),
     dashboardChecklist,
 
+    html.Br(),
+
+    html.H3(children='Table of All Data'),
     dcc.Graph(figure=table, id="table")
 ])
 
