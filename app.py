@@ -124,26 +124,11 @@ def removeDashboards(masterData, dashboards):
     masterData = masterData[masterData['dashboard'].isin(dashboards)]
     return masterData
 
-# while True:
-#     try:
-#         onlyfiles = [f for f in listdir(dataDirectory + MONTHS[defaultMonth -1] ) if isfile(join(dataDirectory + MONTHS[defaultMonth -1] , f))]
 
-#         for file in onlyfiles:
+oldestDate = "2023 April"
+currentDate = datetime.now().strftime("%Y %B")
 
-#             print("Really before file = " + dataDirectory + MONTHS[defaultMonth -1] + "/" + file)
-
-#             df = pd.read_csv(dataDirectory + MONTHS[defaultMonth -1] + "/" + file)
-
-#             print("Before")
-#             masterData = pd.merge(masterData, df, how='outer')
-#             print("After")
-
-#         break
-#     except:
-#         print("Need to download the data for this month")
-#         quit()
-
-masterData = createDf("2023 April", "2023 July")
+masterData = createDf(oldestDate, currentDate)
 masterData = performCounts(masterData)
 
 fig1 = createFig1(masterData)
@@ -156,7 +141,6 @@ dateList = []
 for year in os.listdir("VisitorLogs"):
     for month in os.listdir("VisitorLogs/" + year):
         dateList.append(DateConverter.convertYearAndMonth(int(year), month))
-        # dateList.append(year + " " + month)
 
 #Sort the list of dates
 dateList.sort(key = lambda date: datetime.strptime(date, '%Y %B'))
