@@ -109,7 +109,7 @@ def createDashboardChecklist(masterData):
         options=[{'label': i, 'value': i} for i in masterData['dashboard'].unique()],
         value=masterData['dashboard'].unique(),
         labelStyle={'display': 'inline-block', "display": "flex", "align-items": "center"},
-        style={'width': '100%'}
+        style={'width': '100%'},
     )
 
 
@@ -154,63 +154,78 @@ img = pil_image = Image.open("images/logo.png")
 
 #Build a Plotly graph around the data
 app = Dash(__name__)
-
+app.config["suppress_callback_exceptions"] = True
+app.title = "GBADs Informatics User Vizualizer"
 app.layout = html.Div(children=[
     html.Img(src=pil_image),
-
     html.H1(children='Where our users are'),
 
-    dcc.Graph(figure=fig1, id="graph1"),
-
-    html.Div([
-
-        html.H3(children='Zoom in on a country'),
-        dcc.Dropdown(
-            countryList,
-            value="",
-            id="country-zoom",
-        ),
-
-    ], style={'width': '40%', 'display': 'inline-block', "align-items": "center" }),
-
-    html.H3(children='Filters'),
-    html.H4(children='Filter by date'),
-    html.Div([
-        html.Div([
-            html.H4(children='Start date'),
-            dcc.Dropdown(
-                options=[
-                    {'label': date, 'value': date} for date in dateList
-                ],
-                value=dateList[0],
-                id="start_date",
-            ),
-        ], style={'width': '80%', 'display': 'inline-block', "align-items": "center" }),
-
-        html.Div([
-            html.H4(children='End date'),
-            dcc.Dropdown(
-                options=[
-                    {'label': date, 'value': date} for date in dateList
-                ],
-                value=dateList[-1],
-                id="end_date",
-            ),
-        ], style={'width': '80%', 'display': 'inline-block', "align-items": "center" })
-
-    #align items horizontally
-    ], style={'width': '40%', 'display': 'inline-block', "display": "flex", "align-items": "center", "justify-content": "space-between" }),
-
-    html.H4(children='Filter by Dashboard'),
-    html.H4(children='Dashboards'),
-    dashboardChecklist,
-
+    dcc.Tabs(id="tabs-example-graph", value='tab-1-example-graph', children=[
+        dcc.Tab(label='Interactive Map', value='tab-1-example-graph'),
+        dcc.Tab(label='Table of data', value='tab-2-example-graph'),
+    ]),
     html.Br(),
-
-    html.H3(children='Table of All Data'),
-    dcc.Graph(figure=table, id="table")
+    html.Div(id='tabs-content-example-graph'),
 ])
 
+
+@app.callback(
+        Output('tabs-content-example-graph', 'children'),
+        Input('tabs-example-graph', 'value'))
+def render_content(tab):
+    if tab == 'tab-1-example-graph':
+        return html.Div([
+            dcc.Graph(figure=fig1, id="graph1"),
+
+            html.Div([
+
+                html.H3(children='Zoom in on a country'),
+                dcc.Dropdown(
+                    countryList,
+                    value="",
+                    id="country-zoom",
+                ),
+
+            ], style={'width': '40%', 'display': 'inline-block', "align-items": "center" }),
+
+            html.H3(children='Filters'),
+            html.H4(children='Filter by date'),
+            html.Div([
+                html.Div([
+                    html.H4(children='Start date'),
+                    dcc.Dropdown(
+                        options=[
+                            {'label': date, 'value': date} for date in dateList
+                        ],
+                        value=dateList[0],
+                        id="start_date",
+                    ),
+                ], style={'width': '80%', 'display': 'inline-block', "align-items": "center" }),
+
+                html.Div([
+                    html.H4(children='End date'),
+                    dcc.Dropdown(
+                        options=[
+                            {'label': date, 'value': date} for date in dateList
+                        ],
+                        value=dateList[-1],
+                        id="end_date",
+                    ),
+                ], style={'width': '80%', 'display': 'inline-block', "align-items": "center" })
+
+            #align items horizontally
+            ], style={'width': '40%', 'display': 'inline-block', "display": "flex", "align-items": "center", "justify-content": "space-between" }),
+
+            html.H4(children='Filter by Dashboard'),
+            html.H4(children='Dashboards'),
+            dashboardChecklist,
+        ])
+
+    else:
+        return html.Div([
+            html.H3(children='Table of All Data'),
+            dcc.Graph(figure=table, id="table")
+        ])
 
 
 @app.callback(
@@ -223,7 +238,7 @@ def update_end_date(value):
 
 @app.callback(
     Output("graph1", "figure"),
-    Output("table", "figure"),
+    # Output("table", "figure"),
     Input("start_date", "value"),
     Input("end_date", "value"),
     Input("country-zoom", "value"),
@@ -234,16 +249,16 @@ def updateGraph1(start, end, country, dashboards):
 
     if masterData.empty:
         fig1 = createFig1(masterData, country)
-        table = createTable(masterData)
-        return fig1, table
+        # table = createTable(masterData)
+        return fig1#, table
 
     masterData = removeDashboards(masterData, dashboards)
     performCounts(masterData)
 
     fig1 = createFig1(masterData, country)
-    table = createTable(masterData)
+    # table = createTable(masterData)
 
-    return fig1, table
+    return fig1#, table
 
 if __name__ == '__main__':
     app.run_server(debug=True)
