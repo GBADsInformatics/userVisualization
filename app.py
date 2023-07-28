@@ -7,6 +7,8 @@ from dash import Dash, dcc, html, Input, Output
 import plotly.express as px
 from datetime import datetime
 import plotly.graph_objects as go
+from PIL import Image
+
 
 from os import listdir
 from dateConverter import DateConverter
@@ -40,12 +42,9 @@ def performCounts(masterData):
 
 def removePII(masterData):
     if 'success' in masterData.columns:
-        masterData = masterData.drop(columns=['ip_address', 'isp', 'success', 'timezone'])
+        masterData = masterData.drop(columns=['success'])
 
-    else:
-        masterData = masterData.drop(columns=['ip_address', 'isp', 'timezone'])
-
-    return masterData
+    return masterData.drop(columns=['ip_address', 'isp', 'timezone', 'localtime'])
 
 
 def createDf(startDate, endDate):
@@ -151,10 +150,14 @@ table = createTable(masterData)
 #Create the dashboard checklist
 dashboardChecklist = createDashboardChecklist(masterData)
 
+img = pil_image = Image.open("images/logo.png")
+
 #Build a Plotly graph around the data
 app = Dash(__name__)
 
 app.layout = html.Div(children=[
+    html.Img(src=pil_image),
+
     html.H1(children='Where our users are'),
 
     dcc.Graph(figure=fig1, id="graph1"),
