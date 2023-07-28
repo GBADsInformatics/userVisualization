@@ -3,7 +3,7 @@
 
 import os
 import pandas as pd
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, dash_table
 import plotly.express as px
 from datetime import datetime
 import plotly.graph_objects as go
@@ -71,10 +71,10 @@ def createDf(startDate, endDate):
     return masterData
 
 
-def createFig1(masterData, country=None):
-    latitude = 3.6532
-    longitude =79.3832
-    zm = 0.5
+def createGraph(masterData, country=None):
+    latitude = 20
+    longitude = 0
+    zm = 0.75
     rds = 10
 
     if country != "":
@@ -104,9 +104,13 @@ def createFig1(masterData, country=None):
 
 
 def createDashboardChecklist(masterData):
+    sortedDashboardList = masterData['dashboard'].unique().tolist()
+    sortedDashboardList.sort()
+
     return dcc.Checklist(
         id='dashboard-checklist',
-        options=[{'label': i, 'value': i} for i in masterData['dashboard'].unique()],
+        # options=[{'label': i, 'value': i} for i in masterData['dashboard'].unique()],
+        options=[{'label': i, 'value': i} for i in sortedDashboardList],
         value=masterData['dashboard'].unique(),
         labelStyle={'display': 'inline-block', "display": "flex", "align-items": "center"},
         style={'width': '100%'},
@@ -114,9 +118,23 @@ def createDashboardChecklist(masterData):
 
 
 def createTable(masterData):
-    return go.Figure(data=[go.Table(header=dict(values=masterData.columns),
-                 cells=dict(values=masterData.transpose().values.tolist()))
-                     ])
+    return go.Figure(data=[
+                go.Table(
+                    header=dict(
+                        values=masterData.columns,
+                        # line_color='#F9C142',
+                        fill_color='lightgrey',
+                        align='center',
+                        ),
+                    cells=dict(
+                        values=masterData.transpose().values.tolist(),
+                        # line_color='#F9C142',
+                        fill_color='white',
+                        align='center',
+                        ))],
+                        # width='100%',
+                        # height=1000,)
+    )
 
 
 def removeDashboards(masterData, dashboards):
@@ -130,10 +148,11 @@ currentDate = datetime.now().strftime("%Y %B")
 masterData = createDf(oldestDate, currentDate)
 masterData = performCounts(masterData)
 
-fig1 = createFig1(masterData)
+fig1 = createGraph(masterData)
 
 #Get the list of countries
 countryList = masterData['country'].unique().tolist()
+countryList.sort()
 
 #Create a list of the dates
 dateList = []
@@ -152,30 +171,37 @@ dashboardChecklist = createDashboardChecklist(masterData)
 
 img = pil_image = Image.open("images/logo.png")
 
+# ---- Build the app ----
+
 #Build a Plotly graph around the data
 app = Dash(__name__)
 app.config["suppress_callback_exceptions"] = True
 app.title = "GBADs Informatics User Vizualizer"
+
 app.layout = html.Div(children=[
-    html.Img(src=pil_image),
+    html.Img(src=pil_image, style={'width': '25%', 'display': 'inline-block', "align-items": "left" }),
     html.H1(children='Where our users are'),
 
-    dcc.Tabs(id="tabs-example-graph", value='tab-1-example-graph', children=[
-        dcc.Tab(label='Interactive Map', value='tab-1-example-graph'),
-        dcc.Tab(label='Table of data', value='tab-2-example-graph'),
+    dcc.Tabs(id="tabs", value='graph-tab', children=[
+        dcc.Tab(label='Interactive Map', value='graph-tab'),
+        dcc.Tab(label='Table of data', value='table-tab'),
     ]),
     html.Br(),
-    html.Div(id='tabs-content-example-graph'),
+    html.Div(id='contents'),
 ])
 
 
+# ---- Callbacks ----
+
 @app.callback(
-        Output('tabs-content-example-graph', 'children'),
-        Input('tabs-example-graph', 'value'))
+        Output('contents', 'children'),
+        Input('tabs', 'value'))
 def render_content(tab):
-    if tab == 'tab-1-example-graph':
+    if tab == 'graph-tab':
         return html.Div([
-            dcc.Graph(figure=fig1, id="graph1"),
+            dcc.Graph(figure=fig1,
+                      id="graph1",
+                      style={'width': '100%', 'display': 'inline-block', "align-items": "center" }),
 
             html.Div([
 
@@ -248,17 +274,18 @@ def updateGraph1(start, end, country, dashboards):
     masterData = createDf(start, end)
 
     if masterData.empty:
-        fig1 = createFig1(masterData, country)
+        fig1 = createGraph(masterData, country)
         # table = createTable(masterData)
         return fig1#, table
 
     masterData = removeDashboards(masterData, dashboards)
     performCounts(masterData)
 
-    fig1 = createFig1(masterData, country)
+    fig1 = createGraph(masterData, country)
     # table = createTable(masterData)
 
     return fig1#, table
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
