@@ -30,21 +30,38 @@ countryCenters = {
 def performCounts(masterData):
     cityCounts = {}
     for row in masterData.itertuples():
-        if cityCounts.get(row.city) == None:
-            cityCounts[row.city] = 1
+        if cityCounts.get(row.City) == None:
+            cityCounts[row.City] = 1
         else:
-            cityCounts[row.city] = cityCounts[row.city] + 1
+            cityCounts[row.City] = cityCounts[row.City] + 1
 
-    masterData['Dashboards viewed in this city'] = masterData['city'].map(cityCounts)
+    masterData['Dashboards viewed in this city'] = masterData['City'].map(cityCounts)
 
     return masterData
 
 
 def removePII(masterData):
-    if 'success' in masterData.columns:
-        masterData = masterData.drop(columns=['success'])
+    if 'Success' in masterData.columns:
+        masterData = masterData.drop(columns=['Success'])
 
-    return masterData.drop(columns=['ip_address', 'isp', 'timezone', 'localtime'])
+    return masterData.drop(columns=['Ip_address', 'Isp', 'Timezone', 'Localtime'])
+
+
+def removeDashboardDupes(masterData):
+    #Drop the '-V[0-9]+' from the dashboard name
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('-V[0-9]+', '')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('-v[0-9]+', '')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('v[0-9]+', '')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('V[0-9]+', '')
+
+    #rename laying-hens to layinghens
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('laying-hens', 'layinghens')
+
+    #Remove any Dashboards that are invalid
+    invalidDashboards = ['Dashboards', 'somali-population']
+    masterData = masterData[~masterData['Dashboard'].isin(invalidDashboards)]
+
+    return masterData
 
 
 def createDf(startDate, endDate):
@@ -62,11 +79,19 @@ def createDf(startDate, endDate):
                         masterData = pd.concat([masterData, df])
 
     if masterData.empty:
-        masterData = pd.DataFrame(columns=['city', 'country', 'latitude', 'longitude', 'Dashboards viewed in this city'])
+        masterData = pd.DataFrame(columns=['City', 'Country', 'Latitude', 'Longitude', 'Dashboards viewed in this city'])
         return masterData
 
     masterData = masterData[masterData['dashboard'] != 'doesnotexist']
+
+    #Capitalize the Dashboard names
+    masterData['dashboard'] = masterData['dashboard'].str.capitalize()
+
+    #Capitalize the columns
+    masterData.columns = map(str.capitalize, masterData.columns)
+
     masterData = removePII(masterData)
+    masterData = removeDashboardDupes(masterData)
 
     return masterData
 
@@ -79,20 +104,20 @@ def createGraph(masterData, country=None):
 
     if country != "":
         for row in masterData.itertuples():
-            if row.country == country:
+            if row.Country == country:
                 if country in countryCenters:
                     latitude = countryCenters[country]["lat"]
                     longitude = countryCenters[country]["lon"]
                     zm = countryCenters[country]["zoom"]
 
                 else:
-                    latitude = row.latitude
-                    longitude = row.longitude
+                    latitude = row.Latitude
+                    longitude = row.Longitude
                     zm = 4
 
     graph = px.density_mapbox(masterData,
-        lat='latitude',
-        lon='longitude',
+        lat='Latitude',
+        lon='Longitude',
         z='Dashboards viewed in this city',
         radius=rds,
         center=dict(lat=latitude, lon=longitude),
@@ -104,14 +129,14 @@ def createGraph(masterData, country=None):
 
 
 def createDashboardChecklist(masterData):
-    sortedDashboardList = masterData['dashboard'].unique().tolist()
+    sortedDashboardList = masterData['Dashboard'].unique().tolist()
     sortedDashboardList.sort()
 
     return dcc.Checklist(
         id='dashboard-checklist',
         # options=[{'label': i, 'value': i} for i in masterData['dashboard'].unique()],
         options=[{'label': i, 'value': i} for i in sortedDashboardList],
-        value=masterData['dashboard'].unique(),
+        value=masterData['Dashboard'].unique(),
         labelStyle={'display': 'inline-block', "display": "flex", "align-items": "center"},
         style={'width': '100%'},
     )
@@ -133,9 +158,42 @@ def createTable(masterData):
 
 
 def removeDashboards(masterData, dashboards):
-    masterData = masterData[masterData['dashboard'].isin(dashboards)]
+    masterData = masterData[masterData['Dashboard'].isin(dashboards)]
     return masterData
 
+def getDashboardCountsDict(masterData):
+    dashboardCounts = {}
+    for row in masterData.itertuples():
+        if dashboardCounts.get(row.Dashboard) == None:
+            dashboardCounts[row.Dashboard] = 1
+        else:
+            dashboardCounts[row.Dashboard] = dashboardCounts[row.Dashboard] + 1
+
+    return dashboardCounts
+
+
+def mostPopularDashboard(masterData):
+    #find the most popular dashboard and its count
+    dashboardCounts = getDashboardCountsDict(masterData)
+
+    mostPopularDashboard = max(dashboardCounts, key=dashboardCounts.get)
+    mostPopularDashboardCount = dashboardCounts[mostPopularDashboard]
+
+    return mostPopularDashboard, mostPopularDashboardCount
+
+
+def countVisits(masterData):
+    dashboardCounts = getDashboardCountsDict(masterData)
+
+    totalVisits = 0
+    for dashboard in dashboardCounts:
+        totalVisits = totalVisits + dashboardCounts[dashboard]
+
+    return totalVisits
+
+
+def countCountries(masterData):
+    return len(masterData['Country'].unique())
 
 oldestDate = "2023 April"
 currentDate = datetime.now().strftime("%Y %B")
@@ -146,7 +204,7 @@ masterData = performCounts(masterData)
 fig1 = createGraph(masterData)
 
 #Get the list of countries
-countryList = masterData['country'].unique().tolist()
+countryList = masterData['Country'].unique().tolist()
 countryList.sort()
 
 #Create a list of the dates
@@ -166,6 +224,11 @@ dashboardChecklist = createDashboardChecklist(masterData)
 
 img = pil_image = Image.open("images/logo.png")
 
+mostPopularDashboardname, mostPopularDashboardCount = mostPopularDashboard(masterData)
+totalVisitCounts = countVisits(masterData)
+totalCountries = countCountries(masterData)
+uniqueDashboardCount = len(masterData['Dashboard'].unique())
+
 # ---- Build the app ----
 
 #Build a Plotly graph around the data
@@ -176,6 +239,10 @@ app.title = "GBADs Informatics User Vizualizer"
 app.layout = html.Div(children=[
     html.Img(src=pil_image, style={'width': '25%', 'display': 'inline-block', "align-items": "left" }),
     html.H1(children='Where our users are'),
+
+    html.H3(children=('The Global Burden for Animal Diseases (GBADs) dashboards have had ', totalVisitCounts, ' visits from ', totalCountries, ' unique countries.')),
+    html.H3(children=('Our most popular dashboard is ', mostPopularDashboardname, ' which has had ', mostPopularDashboardCount, ' total views.')),
+    html.H3(children=('GBADs currently offers ', uniqueDashboardCount, ' unqiue dashboards.')),
 
     dcc.Tabs(id="tabs", value='graph-tab', children=[
         dcc.Tab(label='Interactive Map', value='graph-tab'),
