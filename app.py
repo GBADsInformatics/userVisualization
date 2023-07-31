@@ -90,7 +90,7 @@ def createGraph(masterData, country=None):
                     longitude = row.longitude
                     zm = 4
 
-    fig1 = px.density_mapbox(masterData,
+    graph = px.density_mapbox(masterData,
         lat='latitude',
         lon='longitude',
         z='Dashboards viewed in this city',
@@ -99,8 +99,8 @@ def createGraph(masterData, country=None):
         zoom=zm,
         mapbox_style="stamen-toner")
 
-    fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-    return fig1
+    graph.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    return graph
 
 
 def createDashboardChecklist(masterData):
@@ -122,19 +122,14 @@ def createTable(masterData):
                 go.Table(
                     header=dict(
                         values=masterData.columns,
-                        # line_color='#F9C142',
                         fill_color='lightgrey',
                         align='center',
                         ),
                     cells=dict(
                         values=masterData.transpose().values.tolist(),
-                        # line_color='#F9C142',
                         fill_color='white',
                         align='center',
-                        ))],
-                        # width='100%',
-                        # height=1000,)
-    )
+                        ))])
 
 
 def removeDashboards(masterData, dashboards):
@@ -250,7 +245,7 @@ def render_content(tab):
     else:
         return html.Div([
             html.H3(children='Table of All Data'),
-            dcc.Graph(figure=table, id="table")
+            dcc.Graph(figure=table, id="table", style={'width': '100%','height': '1000px', 'display': 'inline-block', "align-items": "center" }),
         ])
 
 
