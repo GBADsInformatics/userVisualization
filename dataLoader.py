@@ -8,7 +8,7 @@ import boto3
 import newS3TicketLib as s3f
 import downloadVLogs as down
 from dateConverter import DateConverter
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logDirectory = "VisitorLogs/"
 
@@ -44,7 +44,7 @@ def weeks ( y, m ):
     cld = calendar.Calendar(firstweekday=0)
     for end_day in cld.itermonthdates(y,m):
         if end_day.weekday() == 5:
-            start_day = end_day-datetime.timedelta(6)
+            start_day = end_day-timedelta(6)
             weekStart.append(format(start_day.isoformat()))
             weekEnd.append(format(end_day.isoformat()))
     weekDates = [ weekStart, weekEnd ]
@@ -82,12 +82,13 @@ while startYear != endYear or startMonth <= endMonth:
         #  Access AWS Credentials and establish session
         #  as a client
         #
-        s3_client = s3f.credentials_client ( )
+        access, secret = s3f.get_keys()
+        s3_client = s3f.credentials_client(access, secret)
         #
         #  Access AWS Credentials and establish session
         #  as a resource
         #
-        s3_resource = s3f.credentials_resource ( )
+        s3_resource = s3f.credentials_resource (access, secret )
 
         # Download a month of visitor logs
         #
@@ -95,6 +96,7 @@ while startYear != endYear or startMonth <= endMonth:
         localpath = "./" + logDirectory+str(yyyy)+"/"+month_names[mon]
         if os.path.exists(localpath) == False:
             os.mkdir(localpath)
+
         # Download the files from S3 and put them in the local directory
         localdir =  logDirectory+str(yyyy)+"/"+month_names[mon]+"/"
         ret = down.downloadVLogs ( s3_client, s3_resource, "gbads-aws-access-logs", "VisitorLogs/", start_date, end_date, localdir )
@@ -204,7 +206,8 @@ while startYear != endYear or startMonth <= endMonth:
         w1 = w2.union(wx)
         print ( "Number of unique users over the month: "+str(len(w1)))
 
-    except:
+    except Exception as e:
+        print("Failed, ", e)
         try:
             os.rmdir(logDirectory+str(yyyy)+"/"+month_names[mon])
         except:

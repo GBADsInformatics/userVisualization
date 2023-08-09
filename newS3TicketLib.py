@@ -35,7 +35,7 @@ def credentials_client ( access, secret ) :
             region_name='ca-central-1'
         )
         s3_client = session.client('s3')
-        return s3_client 
+        return s3_client
     except:
         # Cannot connect to S3 as client
         ret = -1
