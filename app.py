@@ -27,6 +27,15 @@ countryCenters = {
     "Mexico": {"lat": 23.6345, "lon": -102.5528, "zoom": 2.5},
 }
 
+def countMonths():
+    count = 0
+    for year in listdir(dataDirectory):
+        for month in listdir(dataDirectory + "/" + year):
+            count = count + 1
+
+    return count
+
+
 def performCounts(masterData):
     cityCounts = {}
     for row in masterData.itertuples():
@@ -55,10 +64,11 @@ def removeDashboardDupes(masterData):
     masterData['Dashboard'] = masterData['Dashboard'].str.replace('V[0-9]+', '')
 
     #rename laying-hens to layinghens
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('laying-hens', 'layinghens')
+    # masterData['Dashboard'] = masterData['Dashboard'].str.replace('laying-hens', 'layinghens')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Laying-hens', 'Layinghens')
 
     #Remove any Dashboards that are invalid
-    invalidDashboards = ['Dashboards', 'somali-population']
+    invalidDashboards = ['Dashboards', 'Somali-population']
     masterData = masterData[~masterData['Dashboard'].isin(invalidDashboards)]
 
     return masterData
@@ -228,6 +238,7 @@ mostPopularDashboardname, mostPopularDashboardCount = mostPopularDashboard(maste
 totalVisitCounts = countVisits(masterData)
 totalCountries = countCountries(masterData)
 uniqueDashboardCount = len(masterData['Dashboard'].unique())
+monthsElapsed = countMonths()
 
 # ---- Build the app ----
 
@@ -240,7 +251,7 @@ app.layout = html.Div(children=[
     html.Img(src=pil_image, style={'width': '25%', 'display': 'inline-block', "align-items": "left" }),
     html.H1(children='Where our users are'),
 
-    html.H3(children=('The Global Burden for Animal Diseases (GBADs) dashboards have had ', totalVisitCounts, ' visits from ', totalCountries, ' unique countries.')),
+    html.H3(children=('The Global Burden for Animal Diseases (GBADs) dashboards have had ', totalVisitCounts, ' visits from ', totalCountries, ' unique countries over ', monthsElapsed, ' months.')),
     html.H3(children=('Our most popular dashboard is ', mostPopularDashboardname, ' which has had ', mostPopularDashboardCount, ' total views.')),
     html.H3(children=('GBADs currently offers ', uniqueDashboardCount, ' unqiue dashboards.')),
 
@@ -326,7 +337,6 @@ def update_end_date(value):
 
 @app.callback(
     Output("graph1", "figure"),
-    # Output("table", "figure"),
     Input("start_date", "value"),
     Input("end_date", "value"),
     Input("country-zoom", "value"),
@@ -336,17 +346,12 @@ def updateGraph1(start, end, country, dashboards):
     masterData = createDf(start, end)
 
     if masterData.empty:
-        fig1 = createGraph(masterData, country)
-        # table = createTable(masterData)
-        return fig1#, table
+        return createGraph(masterData, country)
 
     masterData = removeDashboards(masterData, dashboards)
     performCounts(masterData)
 
-    fig1 = createGraph(masterData, country)
-    # table = createTable(masterData)
-
-    return fig1#, table
+    return createGraph(masterData, country)
 
 
 if __name__ == '__main__':

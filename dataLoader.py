@@ -5,7 +5,7 @@ import os
 import datetime
 import calendar
 import boto3
-import S3TicketLib as s3f
+import newS3TicketLib as s3f
 import downloadVLogs as down
 from dateConverter import DateConverter
 from datetime import datetime
@@ -63,15 +63,7 @@ currentDate = datetime.now().strftime("%Y %B")
 startYear, startMonth = DateConverter.getMonthAndYear(oldestDate)
 endYear, endMonth = DateConverter.getMonthAndYear(currentDate)
 
-print("Start month = ", startMonth)
-print("End month = ", endMonth)
-print("Start year = ", startYear)
-print("End year = ", endYear)
-
 while startYear != endYear or startMonth <= endMonth:
-    print("Here")
-
-
     try:
         yyyy = str(startYear)
         mm = str(startMonth + 1)

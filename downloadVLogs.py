@@ -3,7 +3,7 @@
 #  S3: Download Visitor Logs (should be used to download one month of logs)
 #
 import boto3
-import S3TicketLib as s3f
+import newS3TicketLib as s3f
 
 # Parameters: s3 sessions, S3 source location, local destination location
 # downloadVLogs ( s3_client, s3_resource, "gbads-aws-access-logs", "VisitorLogs/", "20230601", "20230615", "local_dir/" )
