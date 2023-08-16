@@ -106,36 +106,33 @@ def createDf(startDate, endDate):
     return masterData
 
 
-def createGraph(masterData, country=None):
-    latitude = 20
-    longitude = 0
-    zm = 0.75
-    rds = 10
+def createDfWithOnlyDate(date):
+    masterData = pd.DataFrame()
 
-    if country != "":
-        for row in masterData.itertuples():
-            if row.Country == country:
-                if country in countryCenters:
-                    latitude = countryCenters[country]["lat"]
-                    longitude = countryCenters[country]["lon"]
-                    zm = countryCenters[country]["zoom"]
+    year, month = DateConverter.getMonthAndYear(date)
+    dir = dataDirectory + str(year) + "/" + MONTHS[month]
 
-                else:
-                    latitude = row.Latitude
-                    longitude = row.Longitude
-                    zm = 4
+    for file in listdir(dir):
+        df = pd.read_csv(dir + "/" + file)
+        masterData = pd.concat([masterData, df])
 
-    graph = px.density_mapbox(masterData,
-        lat='Latitude',
-        lon='Longitude',
-        z='Dashboards viewed in this city',
-        radius=rds,
-        center=dict(lat=latitude, lon=longitude),
-        zoom=zm,
-        mapbox_style="stamen-toner")
 
-    graph.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-    return graph
+    if masterData.empty:
+        masterData = pd.DataFrame(columns=['City', 'Country', 'Latitude', 'Longitude', 'Dashboards viewed in this city'])
+        return masterData
+
+    masterData = masterData[masterData['dashboard'] != 'doesnotexist']
+
+    #Capitalize the Dashboard names
+    masterData['dashboard'] = masterData['dashboard'].str.capitalize()
+
+    #Capitalize the columns
+    masterData.columns = map(str.capitalize, masterData.columns)
+
+    masterData = removePII(masterData)
+    masterData = removeDashboardDupes(masterData)
+
+    return masterData
 
 
 def createDashboardChecklist(masterData):
@@ -205,6 +202,20 @@ def countVisits(masterData):
 def countCountries(masterData):
     return len(masterData['Country'].unique())
 
+def createDashboardLinks():
+    return html.Div([
+        html.A('Ahle', href='https://gbadske.org/dashboards/ahle/', target='_blank'),
+        html.A('Apiui', href='https://gbadske.org/dashboards/apiui/', target='_blank'),
+        html.A('Biomass', href='https://gbadske.org/dashboards/biomass/', target='_blank'),
+        html.A('Datastories', href='https://gbadske.org/dashboards/datastories/', target='_blank'),
+        html.A('Ethiopia-population', href='https://gbadske.org/dashboards/datastories/', target='_blank'),
+        html.A('Layinghens', href='https://gbadske.org/dashboards/layinghens/', target='_blank'),
+        html.A('Population', href='https://gbadske.org/dashboards/population/', target='_blank'),
+        html.A('Tev', href='https://gbadske.org/dashboards/tev/', target='_blank'),
+        html.A('Visualizer', href='https://gbadske.org/dashboards/visualizer/', target='_blank'),
+    ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'left'})
+
+
 oldestDate = "2023 April"
 currentDate = datetime.now().strftime("%Y %B")
 
@@ -231,6 +242,9 @@ table = createTable(masterData)
 
 #Create the dashboard checklist
 dashboardChecklist = createDashboardChecklist(masterData)
+
+#Dashboard hyperlinks
+dashboardLinks = createDashboardLinks()
 
 img = pil_image = Image.open("images/logo.png")
 
@@ -288,36 +302,34 @@ def render_content(tab):
             ], style={'width': '40%', 'display': 'inline-block', "align-items": "center" }),
 
             html.H3(children='Filters'),
-            html.H4(children='Filter by date'),
+            html.H4(children='Filter by months since tracking'),
             html.Div([
-                html.Div([
-                    html.H4(children='Start date'),
-                    dcc.Dropdown(
-                        options=[
-                            {'label': date, 'value': date} for date in dateList
-                        ],
-                        value=dateList[0],
-                        id="start_date",
-                    ),
-                ], style={'width': '80%', 'display': 'inline-block', "align-items": "center" }),
-
-                html.Div([
-                    html.H4(children='End date'),
-                    dcc.Dropdown(
-                        options=[
-                            {'label': date, 'value': date} for date in dateList
-                        ],
-                        value=dateList[-1],
-                        id="end_date",
-                    ),
-                ], style={'width': '80%', 'display': 'inline-block', "align-items": "center" })
+                dcc.Slider(
+                    0,
+                    len(dateList) - 1,
+                    step=None,
+                    value=0,
+                    marks={dateList.index(date): date for date in dateList},
+                    id='date-slider'
+                )
 
             #align items horizontally
-            ], style={'width': '40%', 'display': 'inline-block', "display": "flex", "align-items": "center", "justify-content": "space-between" }),
+            ], style={'width': '40%', 'display': 'inline-block', "align-items": "center"}),
 
             html.H4(children='Filter by Dashboard'),
-            html.H4(children='Dashboards'),
-            dashboardChecklist,
+
+            html.Div([
+                html.Div([
+                    html.H4(children='Dashboards'),
+                    dashboardChecklist,
+                ], style={"padding-right": "100px"}),
+                html.Div([
+                    html.H4(children='Links to Dashboards'),
+                    dashboardLinks
+                ])
+
+            #align items horizontally
+            ], style={'width': '50%', 'display': 'inline-block', "display": "flex", "align-items": "center" }),
         ])
 
     else:
@@ -328,22 +340,14 @@ def render_content(tab):
 
 
 @app.callback(
-    Output("end_date", "options"),
-    Input("start_date", "value"))
-def update_end_date(value):
-    index = dateList.index(value)
-    return dateList[index:]
-
-
-@app.callback(
     Output("graph1", "figure"),
-    Input("start_date", "value"),
-    Input("end_date", "value"),
+    Input("date-slider", "value"),
     Input("country-zoom", "value"),
     Input("dashboard-checklist", "value")
     )
-def updateGraph1(start, end, country, dashboards):
-    masterData = createDf(start, end)
+
+def updateGraph1(date, country, dashboards):
+    masterData = createDfWithOnlyDate(dateList[date])
 
     if masterData.empty:
         return createGraph(masterData, country)
@@ -356,3 +360,4 @@ def updateGraph1(start, end, country, dashboards):
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+
