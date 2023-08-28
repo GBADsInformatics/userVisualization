@@ -36,6 +36,39 @@ def countMonths():
     return count
 
 
+def createGraph(masterData, country=None):
+    latitude = 20
+    longitude = 0
+    zm = 0.75
+    rds = 10
+
+    if country != "":
+        for row in masterData.itertuples():
+            if row.Country == country:
+                hit = True
+                if country in countryCenters:
+                    latitude = countryCenters[country]["lat"]
+                    longitude = countryCenters[country]["lon"]
+                    zm = countryCenters[country]["zoom"]
+
+                else:
+                    latitude = row.Latitude
+                    longitude = row.Longitude
+                    zm = 4
+
+    graph = px.density_mapbox(masterData,
+        lat='Latitude',
+        lon='Longitude',
+        z='Dashboards viewed in this city',
+        radius=rds,
+        center=dict(lat=latitude, lon=longitude),
+        zoom=zm,
+        mapbox_style="stamen-toner")
+
+    graph.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    return graph
+
+
 def performCounts(masterData):
     cityCounts = {}
     for row in masterData.itertuples():
@@ -74,6 +107,13 @@ def removeDashboardDupes(masterData):
     return masterData
 
 
+def removeUnsuccessfulConnections(masterData):
+    if 'Success' not in masterData.columns:
+        return masterData
+
+    return masterData[masterData['success'] == 200]
+
+
 def createDf(startDate, endDate):
     masterData = pd.DataFrame()
 
@@ -102,6 +142,7 @@ def createDf(startDate, endDate):
 
     masterData = removePII(masterData)
     masterData = removeDashboardDupes(masterData)
+    masterData = removeUnsuccessfulConnections(masterData)
 
     return masterData
 
@@ -168,6 +209,7 @@ def removeDashboards(masterData, dashboards):
     masterData = masterData[masterData['Dashboard'].isin(dashboards)]
     return masterData
 
+
 def getDashboardCountsDict(masterData):
     dashboardCounts = {}
     for row in masterData.itertuples():
@@ -202,6 +244,7 @@ def countVisits(masterData):
 def countCountries(masterData):
     return len(masterData['Country'].unique())
 
+
 def createDashboardLinks():
     return html.Div([
         html.A('Ahle', href='https://gbadske.org/dashboards/ahle/', target='_blank'),
@@ -216,7 +259,7 @@ def createDashboardLinks():
     ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'left'})
 
 
-oldestDate = "2023 April"
+oldestDate = "2023 May"
 currentDate = datetime.now().strftime("%Y %B")
 
 masterData = createDf(oldestDate, currentDate)
@@ -279,7 +322,6 @@ app.layout = html.Div(children=[
 
 
 # ---- Callbacks ----
-
 @app.callback(
         Output('contents', 'children'),
         Input('tabs', 'value'))
@@ -294,7 +336,7 @@ def render_content(tab):
 
                 html.H3(children='Zoom in on a country'),
                 dcc.Dropdown(
-                    countryList,
+                    options=countryList,
                     value="",
                     id="country-zoom",
                 ),
@@ -344,8 +386,7 @@ def render_content(tab):
     Input("date-slider", "value"),
     Input("country-zoom", "value"),
     Input("dashboard-checklist", "value")
-    )
-
+)
 def updateGraph1(date, country, dashboards):
     masterData = createDfWithOnlyDate(dateList[date])
 
@@ -356,6 +397,22 @@ def updateGraph1(date, country, dashboards):
     performCounts(masterData)
 
     return createGraph(masterData, country)
+
+
+@app.callback(
+    Output("country-zoom", "options"),
+    Input("date-slider", "value"),
+)
+def updateCountryDropDown(date):
+    masterData = createDfWithOnlyDate(dateList[date])
+
+    if masterData.empty:
+        return []
+
+    options = masterData['Country'].unique().tolist()
+    options.sort()
+
+    return options
 
 
 if __name__ == '__main__':
