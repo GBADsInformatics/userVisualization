@@ -11,6 +11,7 @@ from PIL import Image
 from flask import Flask, redirect
 from os import listdir
 from dateConverter import DateConverter
+import re
 
 # Get app base URL
 BASE_URL = os.getenv('BASE_URL','/')
@@ -91,12 +92,14 @@ def removePII(masterData):
     return masterData.drop(columns=['Ip_address', 'Isp', 'Timezone', 'Localtime'])
 
 
+def remove_version_strings(input_string):
+    pattern =  r'[-]?[vV]\d+'
+    return re.sub(pattern, '', input_string)
+
+
 def removeDashboardDupes(masterData):
     #Drop the '-V[0-9]+' from the dashboard name
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('-V[0-9]+', '')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('-v[0-9]+', '')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('v[0-9]+', '')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('V[0-9]+', '')
+    masterData['Dashboard'] = masterData['Dashboard'].apply(remove_version_strings)
 
     #rename laying-hens to layinghens
     masterData['Dashboard'] = masterData['Dashboard'].str.replace('Laying-hens', 'Layinghens')
