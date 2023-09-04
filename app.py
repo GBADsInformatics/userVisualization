@@ -99,12 +99,27 @@ def removeDashboardDupes(masterData):
     masterData['Dashboard'] = masterData['Dashboard'].str.replace('V[0-9]+', '')
 
     #rename laying-hens to layinghens
-    # masterData['Dashboard'] = masterData['Dashboard'].str.replace('laying-hens', 'layinghens')
     masterData['Dashboard'] = masterData['Dashboard'].str.replace('Laying-hens', 'Layinghens')
 
+    masterData = renameDashboards(masterData)
+
     #Remove any Dashboards that are invalid
-    invalidDashboards = ['Dashboards', 'Somali-population']
+    invalidDashboards = ['Dashboards', 'Somali-population', 'Non-existent']
     masterData = masterData[~masterData['Dashboard'].isin(invalidDashboards)]
+
+    return masterData
+
+
+def renameDashboards(masterData):
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Ahle', 'Animal Health Loss Envelope')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Apiui', 'GBADs API Explorer')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Biomass', 'Livestock Biomass')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Datastories', 'Ethiopia Data Stories')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Ethiopia-population', 'Ethiopia Sub-National Population')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Layinghens', 'Layinghens Visualization')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Population', 'National Population')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Tev', 'Total Economic Value')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Visualizer', 'Data Visualizer')
 
     return masterData
 
@@ -249,15 +264,15 @@ def countCountries(masterData):
 
 def createDashboardLinks():
     return html.Div([
-        html.A('Ahle', href='https://gbadske.org/dashboards/ahle/', target='_blank'),
-        html.A('Apiui', href='https://gbadske.org/dashboards/apiui/', target='_blank'),
-        html.A('Biomass', href='https://gbadske.org/dashboards/biomass/', target='_blank'),
-        html.A('Datastories', href='https://gbadske.org/dashboards/datastories/', target='_blank'),
-        html.A('Ethiopia-population', href='https://gbadske.org/dashboards/datastories/', target='_blank'),
-        html.A('Layinghens', href='https://gbadske.org/dashboards/layinghens/', target='_blank'),
-        html.A('Population', href='https://gbadske.org/dashboards/population/', target='_blank'),
-        html.A('Tev', href='https://gbadske.org/dashboards/tev/', target='_blank'),
-        html.A('Visualizer', href='https://gbadske.org/dashboards/visualizer/', target='_blank'),
+        html.A('Animal Health Loss Envelope', href='https://gbadske.org/dashboards/ahle/', target='_blank'),
+        html.A('GBADs API Explorer', href='https://gbadske.org/dashboards/apiui/', target='_blank'),
+        html.A('Livestock Biomass', href='https://gbadske.org/dashboards/biomass/', target='_blank'),
+        html.A('Ethiopia Data Stories', href='https://gbadske.org/dashboards/datastories/', target='_blank'),
+        html.A('Ethiopia Sub-National Population', href='https://gbadske.org/dashboards/datastories/', target='_blank'),
+        html.A('Layinghens Visualization', href='https://gbadske.org/dashboards/layinghens/', target='_blank'),
+        html.A('National Population', href='https://gbadske.org/dashboards/population/', target='_blank'),
+        html.A('Total Economic Value', href='https://gbadske.org/dashboards/tev/', target='_blank'),
+        html.A('Data Visualizer', href='https://gbadske.org/dashboards/visualizer/', target='_blank'),
     ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'left'})
 
 
