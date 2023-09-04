@@ -11,9 +11,9 @@ jobs:
     with:
       IMAGE_NAME: uservis-dash
 
-  # aws:
-  #   needs: docker
-  #   uses: GBADsInformatics/DevopsWorkflows/.github/workflows/aws.yml@main
-  #   secrets: inherit
-  #   with:
-  #     SERVICE_NAME: metadata-api-service
+  aws:
+    needs: docker
+    uses: GBADsInformatics/DevopsWorkflows/.github/workflows/aws.yml@main
+    secrets: inherit
+    with:
+      SERVICE_NAME: uservis-dash-service
