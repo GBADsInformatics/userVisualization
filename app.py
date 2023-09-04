@@ -8,10 +8,12 @@ import plotly.express as px
 from datetime import datetime
 import plotly.graph_objects as go
 from PIL import Image
-
-
+from flask import Flask, redirect
 from os import listdir
 from dateConverter import DateConverter
+
+# Get app base URL
+BASE_URL = os.getenv('BASE_URL','/')
 
 dataDirectory = "VisitorLogs/"
 MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -300,7 +302,7 @@ monthsElapsed = countMonths()
 # ---- Build the app ----
 
 #Build a Plotly graph around the data
-app = Dash(__name__)
+app = Dash(__name__, requests_pathname_prefix=os.getenv('BASE_URL', '')+'/')
 app.config["suppress_callback_exceptions"] = True
 app.title = "GBADs Informatics User Vizualizer"
 
@@ -418,3 +420,21 @@ def updateCountryDropDown(date):
 if __name__ == '__main__':
     app.run_server(debug=True)
 
+def returnApp():
+    """
+    This function is used to create the app and return it to waitress in the docker container
+    """
+    # If BASE_URL is set, use DispatcherMiddleware to serve the app from that path
+    if 'BASE_URL' in os.environ:
+        from werkzeug.middleware.dispatcher import DispatcherMiddleware
+        app.wsgi_app = DispatcherMiddleware(Flask('dummy_app'), {
+            os.environ['BASE_URL']: app.server
+        })
+        # Add redirect to new path
+        @app.wsgi_app.app.route('/')
+        def redirect_to_dashboard():
+            return redirect(os.environ['BASE_URL'])
+        return app.wsgi_app
+
+    # If no BASE_URL is set, just return the app server
+    return app.server

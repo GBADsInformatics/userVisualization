@@ -1,0 +1,2 @@
+# run at 4am every day
+0 4 * * * cd /app/dash && /usr/local/bin/python3 dataLoader.py

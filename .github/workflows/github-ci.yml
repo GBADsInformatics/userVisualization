@@ -1,0 +1,19 @@
+on:
+  push:
+    branches: [ "main" , "master" ]
+
+  workflow_dispatch:
+  
+jobs:
+  docker:
+    uses: GBADsInformatics/DevopsWorkflows/.github/workflows/docker.yml@main
+    secrets: inherit
+    with:
+      IMAGE_NAME: uservis-dash
+
+  # aws:
+  #   needs: docker
+  #   uses: GBADsInformatics/DevopsWorkflows/.github/workflows/aws.yml@main
+  #   secrets: inherit
+  #   with:
+  #     SERVICE_NAME: metadata-api-service

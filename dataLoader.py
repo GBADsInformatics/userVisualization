@@ -16,6 +16,13 @@ logDirectory = "VisitorLogs/"
 if not os.path.exists(logDirectory):
     os.makedirs(logDirectory)
 
+# Printing scraper for logs
+print('Scraper: Downloading visitor logs from S3...')
+
+# function to ignore printing in prod
+if os.getenv("ENV","") == "PROD":
+    sys.stdout = open(os.devnull, 'w')
+
 #
 # Demo program that shows how to copy dashboard visit logs from S3 to 
 # a local directory named after the month requested
@@ -102,7 +109,7 @@ while startYear != endYear or startMonth <= endMonth:
         ret = down.downloadVLogs ( s3_client, s3_resource, "gbads-aws-access-logs", "VisitorLogs/", start_date, end_date, localdir )
         # downloSVLogs return 0 if successful and -1 on failure
         if ret != 0:
-            print ( "Could not download the month stats" )
+            print( "Could not download the month stats" )
             exit ( -1 )
         # Read in a month of visitor logs into DuckDB
         log_names =  logDirectory+str(yyyy)+"/"+month_names[mon]+"/VISITOR_LOGS*.csv"
@@ -112,18 +119,18 @@ while startYear != endYear or startMonth <= endMonth:
         # Gather some Month stats
         #     Number of visits to the dashboards
         month_stats = duckdb.query ( f"SELECT date,ip_address,iso3,country,city,dashboard FROM visits WHERE date BETWEEN '{yyyyStartStr}' AND '{yyyyEndStr}' " ).to_df()
-        print ( "Statistics for "+ logDirectory+str(yyyy)+"/"+month_names[mon]+" "+yyyy )
-        print ( "There were "+str(len(month_stats))+" visits to the Dashboards" )
+        print( "Statistics for "+ logDirectory+str(yyyy)+"/"+month_names[mon]+" "+yyyy )
+        print( "There were "+str(len(month_stats))+" visits to the Dashboards" )
 
         #     Number of distinct IP's that visited the dashboards
         ips = duckdb.query ( "SELECT DISTINCT ip_address FROM month_stats ORDER BY ip_address" ).to_df()
-        print ( str(len(ips))+" unique users accessed the Dashboards")
-        print ( "----------")
+        print( str(len(ips))+" unique users accessed the Dashboards")
+        print( "----------")
 
         #     Number of unique locations (city, country) that visited the dashboards
         #         - the names for the United States and the United Kingdom are too long so replace with short forms
         locations = duckdb.query ( "SELECT DISTINCT iso3,country,city FROM month_stats ORDER BY country,city" ).to_df()
-        print ( "The Dashboards were accessed from "+str(len(locations))+" unique locations:" )
+        print( "The Dashboards were accessed from "+str(len(locations))+" unique locations:" )
         for index, row in locations.iterrows():
             print(row['city'],end=", ")
             if row['iso3'] == "USA":
@@ -132,7 +139,7 @@ while startYear != endYear or startMonth <= endMonth:
                 print("UK")
             else:
                 print(row['country'])
-        print ( "----------")
+        print( "----------")
 
         #     Number of distinct dashboards visited and the number of visits
         #          Dashboards Information
@@ -143,9 +150,9 @@ while startYear != endYear or startMonth <= endMonth:
         # Valid dashboards in the system 
         valid_df = duckdb.query( f"SELECT short_name FROM read_csv_auto('dashboards.csv', header=True)").to_df()
         validDashs = valid_df["short_name"].values.tolist()
-        #print ( validDashs )
+        #print( validDashs )
         dashs = duckdb.query ( "SELECT DISTINCT dashboard FROM month_stats ORDER BY dashboard" ).to_df()
-        print ( "There were "+str(len(dashs))+" unique dashboards accesses attempted of which " )
+        print( "There were "+str(len(dashs))+" unique dashboards accesses attempted of which " )
         valid = 0
         invalid = 0
         validDash = []
@@ -158,23 +165,23 @@ while startYear != endYear or startMonth <= endMonth:
                 invalidDash.append(row['dashboard'])
                 invalid = invalid + 1
         if valid > 1:
-            print ( str(valid)+" were valid: " )
+            print( str(valid)+" were valid: " )
         else:
-            print ( str(valid)+" was valid: " )
+            print( str(valid)+" was valid: " )
 
         for i in validDash:
-            print ( "    "+i )
+            print( "    "+i )
         if invalid > 1:
-            print ( "and "+str(len(invalidDash))+" were invalid:" )
+            print( "and "+str(len(invalidDash))+" were invalid:" )
         else:
-            print ( "and "+str(len(invalidDash))+" was invalid:" )
+            print( "and "+str(len(invalidDash))+" was invalid:" )
         for i in invalidDash:
-            print ( "    "+i )
-        print ( "----------")
+            print( "    "+i )
+        print( "----------")
 
         ctdashs = duckdb.query ( "SELECT DISTINCT dashboard, count(dashboard) FROM month_stats GROUP BY dashboard" ).to_df()
-        print ( ctdashs )
-        print ( "----------")
+        print( ctdashs )
+        print( "----------")
 
         #     Display information by week
         #         Notes
@@ -191,9 +198,9 @@ while startYear != endYear or startMonth <= endMonth:
             wk = duckdb.sql ( f"SELECT DISTINCT ip_address FROM visits WHERE date BETWEEN '{sweek}' AND '{eweek}'" ).to_df()
             w = wk['ip_address'].tolist()
             weeks.append(w)
-            print ( f"There were "+str(len(weeks[i]))+f" unique visitors for the week {startEnd[0][i]} to {startEnd[1][i]}" )
-            #print ( weeks[i] )
-            #print ( "----------")
+            print( f"There were "+str(len(weeks[i]))+f" unique visitors for the week {startEnd[0][i]} to {startEnd[1][i]}" )
+            #print( weeks[i] )
+            #print( "----------")
             if i > 0:
                 w1 = set(weeks[i-1]).union(wx)
                 w2 = set(weeks[i])
@@ -202,9 +209,9 @@ while startYear != endYear or startMonth <= endMonth:
                 wx = w1
                 wdiff = w2.difference(w1)
                 diff = list(wdiff)
-                print ( "Number of new users: "+str(len(diff)))
+                print( "Number of new users: "+str(len(diff)))
         w1 = w2.union(wx)
-        print ( "Number of unique users over the month: "+str(len(w1)))
+        print( "Number of unique users over the month: "+str(len(w1)))
 
     except Exception as e:
         print("Failed, ", e)
