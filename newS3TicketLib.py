@@ -4,12 +4,16 @@
 #
 import boto3
 from cryptography.fernet import Fernet
+import os
 #
 # Authenticate and establish session
 #  - load key from key.conf
 #
 def load_key():
-    return open("MajorKey/key.conf", "rb").read()
+    if os.environ.get("MAJOR_KEY", ""):
+        return os.environ.get("MAJOR_KEY", "")
+    else:
+        return open("MajorKey/key.conf", "rb").read()
 #
 # decrypt credentials
 #
@@ -18,9 +22,12 @@ def get_keys():
     # initialize the Fernet class
     f = Fernet(key)
     # read the encrypted keys
-    with open("MajorKey/info.conf", "r") as info_file:
-        encrypt1 = info_file.readline().strip()
-        encrypt2 = info_file.readline().strip()
+    encrypt1 = os.environ.get("MAJOR_INFO1", "")
+    encrypt2 = os.environ.get("MAJOR_INFO2", "")
+    if not encrypt1:
+        with open("MajorKey/info.conf", "r") as info_file:
+            encrypt1 = info_file.readline().strip()
+            encrypt2 = info_file.readline().strip()
     access = f.decrypt(encrypt1.encode('utf-8')).decode('utf-8')
     secret = f.decrypt(encrypt2.encode('utf-8')).decode('utf-8')
     return access, secret
