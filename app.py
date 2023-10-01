@@ -174,7 +174,7 @@ def createDfWithOnlyDate(date):
     dir = dataDirectory + str(year) + "/" + MONTHS[month]
 
     for file in listdir(dir):
-        df = pd.read_csv(dir + "/" + file)
+        df = pd.read_csv(dir + "/" + file, on_bad_lines='skip')
         masterData = pd.concat([masterData, df])
 
 
