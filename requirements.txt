@@ -15,4 +15,4 @@ six==1.16.0
 tzdata==2023.3
 urllib3==1.26.16
 waitress==1.2.0b2
-werkzeug==1.0.0
+Werkzeug==2.3.0

@@ -145,7 +145,7 @@ def createDf(startDate, endDate):
             for subDir in listdir(dataDirectory + "/" + dir):
                 if MONTHS.index(subDir) >= startMonth and MONTHS.index(subDir) <= endMonth:
                     for file in listdir(dataDirectory + "/" + dir + "/" + subDir):
-                        df = pd.read_csv(dataDirectory + "/" + dir + "/" + subDir + "/" + file)
+                        df = pd.read_csv(dataDirectory + "/" + dir + "/" + subDir + "/" + file, on_bad_lines='skip')
                         masterData = pd.concat([masterData, df])
 
     if masterData.empty:
