@@ -30,6 +30,9 @@ countryCenters = {
     "Mexico": {"lat": 23.6345, "lon": -102.5528, "zoom": 2.5},
 }
 
+def getMapboxAccessToken():
+    return open('MajorKey/.mapbox', "r").read()
+
 def countMonths():
     count = 0
     for year in listdir(dataDirectory):
@@ -66,7 +69,7 @@ def createGraph(masterData, country=None):
         radius=rds,
         center=dict(lat=latitude, lon=longitude),
         zoom=zm,
-        mapbox_style="open-street-map")
+        mapbox_style="stamen-toner")
 
     graph.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return graph
@@ -299,6 +302,7 @@ masterData = createDf(oldestDate, currentDate)
 masterData = performCounts(masterData)
 
 fig1 = createGraph(masterData)
+fig1.layout.mapbox.accesstoken = getMapboxAccessToken()
 
 #Get the list of countries
 countryList = masterData['Country'].unique().tolist()
