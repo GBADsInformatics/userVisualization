@@ -114,15 +114,16 @@ def removeDashboardDupes(masterData):
 
 
 def renameDashboards(masterData):
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Ahle', 'Animal Health Loss Envelope')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Apiui', 'GBADs API Explorer')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Biomass', 'Livestock Biomass')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Datastories', 'Ethiopia Data Stories')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Ethiopia-population', 'Ethiopia Sub-National Population')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Layinghens', 'Layinghens Visualization')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Population', 'National Population')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Tev', 'Total Economic Value')
-    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Visualizer', 'Data Visualizer')
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Ahle[\s\S]*', 'Animal Health Loss Envelope', regex=True)
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Apiui[\s\S]*', 'GBADs API Explorer', regex=True)
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Biomass[\s\S]*', 'Livestock Biomass', regex=True)
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Datastories[\s\S]*', 'Ethiopia Data Stories', regex=True)
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Ethiopia-population[\s\S]*', 'Ethiopia Sub-National Population', regex=True)
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Layinghens[\s\S]*', 'Layinghens Visualization', regex=True)
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Population[\s\S]*', 'National Population', regex=True)
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Tev[\s\S]*', 'Total Economic Value', regex=True)
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Visualizer[\s\S]*', 'Data Visualizer', regex=True)
+    masterData['Dashboard'] = masterData['Dashboard'].str.replace('Livestock Biomas[\s\S]*', 'Livestock Biomass', regex=True)
 
     return masterData
 
