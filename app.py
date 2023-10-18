@@ -30,8 +30,10 @@ countryCenters = {
     "Mexico": {"lat": 23.6345, "lon": -102.5528, "zoom": 2.5},
 }
 
+
 def getMapboxAccessToken():
     return open('MajorKey/.mapbox', "r").read()
+
 
 def countMonths():
     count = 0
@@ -381,7 +383,7 @@ def render_content(tab):
 
             ], style={'width': '40%', 'display': 'inline-block', "align-items": "center" }),
 
-            html.H3(children='Filters'),
+            html.H3(children='Filters:'),
             html.H4(children='Filter by months since tracking'),
             html.Div([
                 dcc.Slider(
