@@ -302,7 +302,8 @@ masterData = createDf(oldestDate, currentDate)
 masterData = performCounts(masterData)
 
 fig1 = createGraph(masterData)
-fig1.layout.mapbox.accesstoken = getMapboxAccessToken()
+fig1.update_layout(mapbox_accesstoken=getMapboxAccessToken())
+# fig1.layout.mapbox.accesstoken = getMapboxAccessToken()
 
 #Get the list of countries
 countryList = masterData['Country'].unique().tolist()
@@ -453,7 +454,7 @@ def updateCountryDropDown(date):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
 
 def returnApp():
     """
