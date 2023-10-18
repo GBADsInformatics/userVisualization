@@ -66,7 +66,7 @@ def createGraph(masterData, country=None):
         radius=rds,
         center=dict(lat=latitude, lon=longitude),
         zoom=zm,
-        mapbox_style="stamen-terrain")
+        mapbox_style="open-street-map")
 
     graph.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return graph
