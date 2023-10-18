@@ -208,7 +208,7 @@ def createDashboardChecklist(masterData):
         value=masterData['Dashboard'].unique(),
         labelStyle={'display': 'inline-block', "display": "flex", "align-items": "center"},
         style={'width': '100%'},
-    )
+    ), sortedDashboardList
 
 
 def createTable(masterData):
@@ -266,18 +266,30 @@ def countCountries(masterData):
     return len(masterData['Country'].unique())
 
 
-def createDashboardLinks():
-    return html.Div([
-        html.A('Animal Health Loss Envelope', href='https://gbadske.org/dashboards/ahle/', target='_blank'),
-        html.A('GBADs API Explorer', href='https://gbadske.org/dashboards/apiui/', target='_blank'),
-        html.A('Livestock Biomass', href='https://gbadske.org/dashboards/biomass/', target='_blank'),
-        html.A('Ethiopia Data Stories', href='https://gbadske.org/dashboards/datastories/', target='_blank'),
-        html.A('Ethiopia Sub-National Population', href='https://gbadske.org/dashboards/datastories/', target='_blank'),
-        html.A('Layinghens Visualization', href='https://gbadske.org/dashboards/layinghens/', target='_blank'),
-        html.A('National Population', href='https://gbadske.org/dashboards/population/', target='_blank'),
-        html.A('Total Economic Value', href='https://gbadske.org/dashboards/tev/', target='_blank'),
-        html.A('Data Visualizer', href='https://gbadske.org/dashboards/visualizer/', target='_blank'),
-    ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'left'})
+def createDashboardLinks(dashboardCheckList):
+
+    dashboardLinkMap = {
+        'Animal Health Loss Envelope': 'https://gbadske.org/dashboards/ahle/',
+        'GBADs API Explorer': 'https://gbadske.org/dashboards/apiui/',
+        'Livestock Biomass': 'https://gbadske.org/dashboards/biomass/',
+        'Ethiopia Data Stories': 'https://gbadske.org/dashboards/datastories/',
+        'Ethiopia Sub-National Population': 'https://gbadske.org/dashboards/datastories/',
+        'Layinghens Visualization': 'https://gbadske.org/dashboards/layinghens/',
+        'National Population': 'https://gbadske.org/dashboards/population/',
+        'Total Economic Value': 'https://gbadske.org/dashboards/tev/',
+        'Data Visualizer': 'https://gbadske.org/dashboards/visualizer/',
+        'Users': 'https://gbadske.org/dashboards/users/',
+    }
+
+    links = []
+    for dash in dashboardCheckList:
+
+        if dash in dashboardLinkMap.keys():
+            links.append(html.A(dash, href=dashboardLinkMap[dash], target='_blank'))
+        else:
+            links.append(html.A(dash, target='_blank'))
+
+    return html.Div(links, style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'left'})
 
 
 oldestDate = "2023 May"
@@ -305,10 +317,10 @@ dateList.sort(key = lambda date: datetime.strptime(date, '%Y %B'))
 table = createTable(masterData)
 
 #Create the dashboard checklist
-dashboardChecklist = createDashboardChecklist(masterData)
+dashboardChecklist, dashboardChecklistList = createDashboardChecklist(masterData)
 
 #Dashboard hyperlinks
-dashboardLinks = createDashboardLinks()
+dashboardLinks = createDashboardLinks(dashboardChecklistList)
 
 img = pil_image = Image.open("images/logo.png")
 
