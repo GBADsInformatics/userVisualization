@@ -32,7 +32,10 @@ countryCenters = {
 
 
 def getMapboxAccessToken():
-    return open('MajorKey/.mapbox', "r").read()
+    if os.environ.get("MAPBOX", ""):
+        return os.environ.get("MAPBOX", "")
+    else:
+        return open('MajorKey/.mapbox', "r").read()
 
 
 def countMonths():
@@ -176,12 +179,21 @@ def createDf(startDate, endDate):
 def createDfWithOnlyDate(date):
     masterData = pd.DataFrame()
 
-    year, month = DateConverter.getMonthAndYear(date)
-    dir = dataDirectory + str(year) + "/" + MONTHS[month]
+    masterData = pd.DataFrame()
+    if date == "All Dates":
+        for years in listdir(dataDirectory):
+            for months in listdir(dataDirectory + "/" + years):
+                for file in listdir(dataDirectory + "/" + years + "/" + months):
+                    df = pd.read_csv(dataDirectory + "/" + years + "/" + months + "/" + file, on_bad_lines='skip')
+                    masterData = pd.concat([masterData, df])
 
-    for file in listdir(dir):
-        df = pd.read_csv(dir + "/" + file, on_bad_lines='skip')
-        masterData = pd.concat([masterData, df])
+    else:
+        year, month = DateConverter.getMonthAndYear(date)
+        dir = dataDirectory + str(year) + "/" + MONTHS[month]
+
+        for file in listdir(dir):
+            df = pd.read_csv(dir + "/" + file, on_bad_lines='skip')
+            masterData = pd.concat([masterData, df])
 
 
     if masterData.empty:
@@ -319,6 +331,7 @@ for year in os.listdir("VisitorLogs"):
 
 #Sort the list of dates
 dateList.sort(key = lambda date: datetime.strptime(date, '%Y %B'))
+dateList.insert(0, "All Dates")
 
 #Create the table
 table = createTable(masterData)
