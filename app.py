@@ -67,6 +67,8 @@ def createGraph(masterData, country=None):
                     longitude = row.Longitude
                     zm = 4
 
+    px.set_mapbox_access_token( getMapboxAccessToken() ) 
+    
     graph = px.density_mapbox(masterData,
         lat='Latitude',
         lon='Longitude',
