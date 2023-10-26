@@ -76,7 +76,7 @@ def createGraph(masterData, country=None):
         radius=rds,
         center=dict(lat=latitude, lon=longitude),
         zoom=zm,
-        mapbox_style="stamen-toner")
+        mapbox_style="carto-positron")
 
     graph.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return graph
@@ -398,8 +398,7 @@ def render_content(tab):
 
             ], style={'width': '40%', 'display': 'inline-block', "align-items": "center" }),
 
-            html.H3(children='Filters:'),
-            html.H3(children=f'Success getting key {getMapboxAccessToken()[:3]}'),
+            html.H3(children='Filters'),
             html.H4(children='Filter by months since tracking'),
             html.Div([
                 dcc.Slider(
