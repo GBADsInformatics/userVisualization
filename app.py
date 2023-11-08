@@ -13,6 +13,15 @@ from os import listdir
 from dateConverter import DateConverter
 import re
 
+#Invalid Dashboards (HERE FOR EASY ACCESS AND UPDATING)
+invalidDashboards = [
+    'Dashboards',
+    'Somali-population',
+    'Non-existent',
+    '______',
+    'Sidebar.html',
+]
+
 # Get app base URL
 BASE_URL = os.getenv('BASE_URL','/')
 
@@ -117,7 +126,6 @@ def removeDashboardDupes(masterData):
     masterData = renameDashboards(masterData)
 
     #Remove any Dashboards that are invalid
-    invalidDashboards = ['Dashboards', 'Somali-population', 'Non-existent']
     masterData = masterData[~masterData['Dashboard'].isin(invalidDashboards)]
 
     return masterData
