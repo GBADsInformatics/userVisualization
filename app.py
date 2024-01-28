@@ -5,13 +5,13 @@ import os
 import pandas as pd
 from dash import Dash, dcc, html, Input, Output, dash_table
 import plotly.express as px
-from datetime import datetime
 import plotly.graph_objects as go
 from PIL import Image
 from flask import Flask, redirect
 from os import listdir
 from dateConverter import DateConverter
 import re
+import datetime
 
 #Invalid Dashboards (HERE FOR EASY ACCESS AND UPDATING)
 invalidDashboards = [
@@ -20,6 +20,7 @@ invalidDashboards = [
     'Non-existent',
     '______',
     'Sidebar.html',
+    ').'
 ]
 
 # Get app base URL
@@ -159,13 +160,17 @@ def createDf(startDate, endDate):
     startYear, startMonth = DateConverter.getMonthAndYear(startDate)
     endYear, endMonth = DateConverter.getMonthAndYear(endDate)
 
+    start = datetime.datetime(int(startYear), startMonth, 1)
+    end = datetime.datetime(int(endYear), endMonth + 1, 1)
+
     for dir in listdir(dataDirectory):
-        if dir >= str(startYear) and dir <= str(endYear):
-            for subDir in listdir(dataDirectory + "/" + dir):
-                if MONTHS.index(subDir) >= startMonth and MONTHS.index(subDir) <= endMonth:
-                    for file in listdir(dataDirectory + "/" + dir + "/" + subDir):
-                        df = pd.read_csv(dataDirectory + "/" + dir + "/" + subDir + "/" + file, on_bad_lines='skip')
-                        masterData = pd.concat([masterData, df])
+        for subDir in listdir(dataDirectory + "/" + dir):
+            monthBeingChecked = datetime.datetime(int(dir), MONTHS.index(subDir) + 1, 1)
+
+            if monthBeingChecked >= start and monthBeingChecked <= end:
+                for file in listdir(dataDirectory + "/" + dir + "/" + subDir):
+                    df = pd.read_csv(dataDirectory + "/" + dir + "/" + subDir + "/" + file, on_bad_lines='skip')
+                    masterData = pd.concat([masterData, df])
 
     if masterData.empty:
         masterData = pd.DataFrame(columns=['City', 'Country', 'Latitude', 'Longitude', 'Dashboards viewed in this city'])
@@ -230,7 +235,6 @@ def createDashboardChecklist(masterData):
 
     return dcc.Checklist(
         id='dashboard-checklist',
-        # options=[{'label': i, 'value': i} for i in masterData['dashboard'].unique()],
         options=[{'label': i, 'value': i} for i in sortedDashboardList],
         value=masterData['Dashboard'].unique(),
         labelStyle={'display': 'inline-block', "display": "flex", "align-items": "center"},
@@ -320,14 +324,13 @@ def createDashboardLinks(dashboardCheckList):
 
 
 oldestDate = "2023 May"
-currentDate = datetime.now().strftime("%Y %B")
+currentDate = datetime.datetime.now().strftime("%Y %B")
 
 masterData = createDf(oldestDate, currentDate)
 masterData = performCounts(masterData)
 
 fig1 = createGraph(masterData)
 fig1.update_layout(mapbox_accesstoken=getMapboxAccessToken())
-# fig1.layout.mapbox.accesstoken = getMapboxAccessToken()
 
 #Get the list of countries
 countryList = masterData['Country'].unique().tolist()
@@ -340,7 +343,7 @@ for year in os.listdir("VisitorLogs"):
         dateList.append(DateConverter.convertYearAndMonth(int(year), month))
 
 #Sort the list of dates
-dateList.sort(key = lambda date: datetime.strptime(date, '%Y %B'))
+dateList.sort(key = lambda date: datetime.datetime.strptime(date, '%Y %B'))
 dateList.insert(0, "All Dates")
 
 #Create the table
