@@ -20,7 +20,10 @@ invalidDashboards = [
     'Non-existent',
     '______',
     'Sidebar.html',
-    ').'
+    ').',
+    ')',
+    '1234.php',
+    'S'
 ]
 
 # Get app base URL
@@ -119,6 +122,7 @@ def remove_version_strings(input_string):
 
 def removeDashboardDupes(masterData):
     #Drop the '-V[0-9]+' from the dashboard name
+    masterData = masterData.dropna()
     masterData['Dashboard'] = masterData['Dashboard'].apply(remove_version_strings)
 
     #rename laying-hens to layinghens
@@ -395,31 +399,31 @@ def render_content(tab):
     if tab == 'graph-tab':
         return html.Div([
             dcc.Graph(figure=fig1,
-                      id="graph1",
-                      style={'width': '100%', 'display': 'inline-block', "align-items": "center" }),
+                  id="graph1",
+                  style={'width': '100%', 'display': 'inline-block', "align-items": "center" }),
 
             html.Div([
 
-                html.H3(children='Zoom in on a country'),
-                dcc.Dropdown(
-                    options=countryList,
-                    value="",
-                    id="country-zoom",
-                ),
+            html.H3(children='Zoom in on a country'),
+            dcc.Dropdown(
+                options=countryList,
+                value="",
+                id="country-zoom",
+            ),
 
             ], style={'width': '40%', 'display': 'inline-block', "align-items": "center" }),
 
             html.H3(children='Filters'),
             html.H4(children='Filter by months since tracking'),
             html.Div([
-                dcc.Slider(
-                    0,
-                    len(dateList) - 1,
-                    step=None,
-                    value=0,
-                    marks={dateList.index(date): date for date in dateList},
-                    id='date-slider'
-                )
+            dcc.Slider(
+                0,
+                len(dateList) - 1,
+                step=None,
+                value=0,
+                marks={dateList.index(date): {'label': date, 'style': {'writing-mode': 'vertical-lr'}} for date in dateList},
+                id='date-slider'
+            )
 
             #align items horizontally
             ], style={'width': '40%', 'display': 'inline-block', "align-items": "center"}),
@@ -427,14 +431,14 @@ def render_content(tab):
             html.H4(children='Filter by Dashboard'),
 
             html.Div([
-                html.Div([
-                    html.H4(children='Dashboards'),
-                    dashboardChecklist,
-                ], style={"padding-right": "100px"}),
-                html.Div([
-                    html.H4(children='Links to Dashboards'),
-                    dashboardLinks
-                ])
+            html.Div([
+                html.H4(children='Dashboards'),
+                dashboardChecklist,
+            ], style={"padding-right": "100px"}),
+            html.Div([
+                html.H4(children='Links to Dashboards'),
+                dashboardLinks
+            ])
 
             #align items horizontally
             ], style={'width': '50%', 'display': 'inline-block', "display": "flex", "align-items": "center" }),
